@@ -11,7 +11,7 @@
             overflow: hidden; transition: background-color 0.5s;
         }
         #stage-container {
-            flex: 1; display: flex; justify-content: center; align-items: center;
+            flex: 1; display: flex; justify-content: center; align-items: center; z-index: 1;
         }
         canvas {
             image-rendering: pixelated; transition: filter 0.5s;
@@ -27,23 +27,104 @@
             text-align: center; outline: none; text-transform: lowercase;
         }
         #log { font-size: 0.8rem; margin-top: 5px; opacity: 0.7; }
+        
+        /* Modales y Menú */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100; display: flex;
+            justify-content: center; align-items: center; flex-direction: column;
+            padding: 20px; box-sizing: border-box; text-align: center;
+        }
+        .hidden { display: none !important; }
+        .modal-box {
+            background: #111; border: 1px solid #333; padding: 20px; max-width: 500px;
+        }
+        .modal-box p { margin: 0 0 15px 0; line-height: 1.4; color: #aaa; }
+        .modal-box a { color: #0f0; text-decoration: none; border-bottom: 1px solid #0f0; }
+        button {
+            background: transparent; border: 1px solid #0f0; color: #0f0;
+            padding: 10px 20px; font-family: monospace; cursor: pointer; font-size: 1rem;
+        }
+        button:hover { background: #0f0; color: #000; }
+        
+        #menu-btn {
+            position: fixed; top: 15px; right: 15px; background: transparent;
+            border: none; color: #333; font-size: 24px; cursor: pointer; z-index: 50;
+            transition: color 0.3s;
+        }
+        #menu-btn:hover { color: #0f0; }
+        #word-list-container {
+            margin-top: 15px; font-size: 0.8rem; color: #555; text-align: left;
+            max-height: 200px; overflow-y: auto; word-wrap: break-word;
+        }
+
+        /* Efecto NSFW Easter Egg */
+        #nsfw-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.5s;
+            background-color: #1a0000;
+            display: flex; flex-wrap: wrap; align-content: flex-start; overflow: hidden;
+        }
+        #nsfw-bg.active { opacity: 1; }
+        .nsfw-text {
+            color: rgba(255,0,0,0.1); font-size: 3rem; font-weight: bold;
+            text-transform: uppercase; white-space: nowrap; padding: 10px;
+            animation: scrollNSFW 10s linear infinite;
+        }
+        @keyframes scrollNSFW { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     </style>
 </head>
 <body>
+    <div id="warning-modal" class="overlay">
+        <div class="modal-box">
+            <p style="color: #f00; font-weight: bold;">ADVERTENCIA DE SEGURIDAD</p>
+            <p>Este experimento contiene efectos visuales intermitentes, alteraciones de color rápidas y sonidos de frecuencias anómalas.</p>
+            <p>Puede causar molestias o desencadenar episodios en personas con epilepsia fotosensible o sensibilidad auditiva.</p>
+            <button id="btn-accept-warning">ACEPTAR Y CONTINUAR</button>
+        </div>
+    </div>
+
+    <button id="menu-btn">☰</button>
+    <div id="menu-modal" class="overlay hidden">
+        <div class="modal-box">
+            <p>Proyecto de experimentación desarrollado por Leandro Carlino como práctica técnica con Gemini 3.1.</p>
+            <p><a href="https://www.linkedin.com/in/leandro-carlino/" target="_blank">Perfil en LinkedIn</a></p>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+            <button id="btn-show-words">VER DICCIONARIO</button>
+            <div id="word-list-container" class="hidden"></div>
+            <br><br>
+            <button id="btn-close-menu">CERRAR</button>
+        </div>
+    </div>
+
+    <div id="nsfw-bg">
+        </div>
+
     <div id="stage-container">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
     </div>
     <div id="ui">
-        <input type="text" id="cmd" autofocus autocomplete="off">
-        <div id="log">Sistema iniciado. Ingrese parámetro.</div>
+        <input type="text" id="cmd" autocomplete="off" disabled>
+        <div id="log">Sistema bloqueado. Acepte la advertencia.</div>
     </div>
 
     <script>
+        // Setup NSFW Background
+        const nsfwBg = document.getElementById('nsfw-bg');
+        let nsfwContent = '';
+        for(let i=0; i<50; i++) nsfwContent += '<span class="nsfw-text">NSFW EXPLICIT CONTENT WARNING </span>';
+        nsfwBg.innerHTML = nsfwContent;
+
+        // UI Elements
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const input = document.getElementById('cmd');
         const log = document.getElementById('log');
-
+        const warningModal = document.getElementById('warning-modal');
+        const menuModal = document.getElementById('menu-modal');
+        const wordListContainer = document.getElementById('word-list-container');
+        
+        // Audio Motor
         const Sfx = {
             ctx: null,
             init: function() {
@@ -51,7 +132,8 @@
                 if(this.ctx.state === 'suspended') this.ctx.resume();
             },
             play: function(f, t, d, v, f2=null) {
-                this.init(); const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                if(!this.ctx) return;
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
                 o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime);
                 if(f2) o.frequency.exponentialRampToValueAtTime(f2, this.ctx.currentTime + d);
                 o.connect(g); g.connect(this.ctx.destination);
@@ -60,7 +142,8 @@
                 o.start(); o.stop(this.ctx.currentTime + d);
             },
             noise: function(d, v) {
-                this.init(); const bs = this.ctx.sampleRate * d; const b = this.ctx.createBuffer(1, bs, this.ctx.sampleRate);
+                if(!this.ctx) return;
+                const bs = this.ctx.sampleRate * d; const b = this.ctx.createBuffer(1, bs, this.ctx.sampleRate);
                 const data = b.getChannelData(0); for(let i=0; i<bs; i++) data[i] = Math.random() * 2 - 1;
                 const n = this.ctx.createBufferSource(); n.buffer = b; const g = this.ctx.createGain();
                 n.connect(g); g.connect(this.ctx.destination);
@@ -79,6 +162,7 @@
         const baseImg = new Image();
         baseImg.src = 'imagen.png';
         let frame = 0;
+        let clockInterval = null;
 
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -97,6 +181,7 @@
             if (state.anim === 'latido') { const s = 1 + Math.sin(frame * 0.15) * 0.05; w *= s; h *= s; }
             if (state.anim === 'caos') { offsetX = (Math.random()-0.5)*10; offsetY = (Math.random()-0.5)*10; }
             if (state.anim === 'terremoto') { offsetX = (Math.random()-0.5)*30; offsetY = (Math.random()-0.5)*30; }
+            if (state.anim === 'glitch') { if(Math.random()>0.8) { offsetX = (Math.random()-0.5)*50; canvas.style.filter = `hue-rotate(${Math.random()*360}deg)`; } else { canvas.style.filter = state.filter; } }
 
             const x = (canvas.width - w) / 2 + offsetX;
             const y = (canvas.height - h) / 2 + offsetY;
@@ -145,6 +230,15 @@
                     ctx.arc(x + Math.abs(Math.cos(i*11))*w, y + h - (frame*2 + i*25)%h, 4 + Math.sin(i)*3, 0, Math.PI*2);
                     ctx.stroke();
                 }
+            } else if (state.particles === 'estatica') {
+                for(let i=0; i<200; i++) {
+                    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)';
+                    ctx.fillRect(x + Math.random()*w, y + Math.random()*h, 2, 2);
+                }
+            } else if (state.particles === 'neon') {
+                ctx.strokeStyle = `hsl(${frame*2%360}, 100%, 50%)`;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x+10, y+10, w-20, h-20);
             }
 
             ctx.restore();
@@ -155,6 +249,10 @@
         baseImg.onload = () => requestAnimationFrame(render);
 
         const resetState = () => {
+            if (clockInterval) clearInterval(clockInterval);
+            clockInterval = null;
+            nsfwBg.classList.remove('active');
+            canvas.style.transform = 'none';
             state = { overlay: 'none', filter: 'none', anim: 'none', scale: 1, rotation: 0, bgColor: '#050505', particles: 'none', alpha: 1 };
         };
 
@@ -203,24 +301,68 @@
             "placer": () => { cmd("Endorfinas.", {filter: 'brightness(130%) contrast(90%)', anim: 'flotar'}); Sfx.play(400, 'sine', 1, 0.1); },
             "asfixia": () => { cmd("Hipoxia.", {overlay: 'rgba(0,0,50,0.5)', filter: 'grayscale(50%)', anim: 'caos'}); Sfx.noise(2, 0.1); },
             "sudor": () => { cmd("Exudación.", {particles: 'sudor'}); },
-            "desnudo": () => { resetState(); log.innerText = "Exposición epidérmica."; },
-            "piel": () => { cmd("Superficie anatómica.", {filter: 'sepia(30%) brightness(110%)'}); },
             "latido": () => { cmd("Contracción miocárdica.", {anim: 'latido'}); Sfx.play(50, 'sine', 0.2, 0.5); setTimeout(()=>Sfx.play(50, 'sine', 0.2, 0.5), 300); },
 
             "grito": () => { cmd("Emisión acústica extrema.", {anim: 'terremoto', scale: 1.2, filter: 'contrast(300%)'}); Sfx.play(2000, 'sawtooth', 0.8, 0.3, 100); },
             "oscuridad": () => { cmd("Ausencia de fotones.", {filter: 'brightness(10%)', bgColor: '#000'}); },
             "luz": () => { cmd("Saturación fotónica.", {filter: 'brightness(500%)', bgColor: '#fff'}); Sfx.play(1000, 'sine', 1, 0.1); },
             "antiguo": () => { cmd("Deterioro temporal.", {filter: 'sepia(100%) contrast(150%) blur(1px)'}); },
-            "reloj": () => { cmd("Percepción temporal.", {rotation: Math.PI/4}); setInterval(() => state.rotation += 0.1, 1000); Sfx.play(800, 'sine', 0.05, 0.1); },
+            "reloj": () => { 
+                if(clockInterval) clearInterval(clockInterval);
+                cmd("Percepción temporal.", {rotation: Math.PI/4}); 
+                clockInterval = setInterval(() => state.rotation += 0.1, 1000); 
+                Sfx.play(800, 'sine', 0.05, 0.1); 
+            },
             "terremoto": () => { cmd("Actividad sísmica.", {anim: 'terremoto'}); Sfx.noise(2, 0.5); },
             "abismo": () => { cmd("Descenso infinito.", {scale: 0.1, bgColor: '#000'}); Sfx.play(200, 'sine', 2, 0.2, 20); },
             "diablo": () => { cmd("Entidad hostil.", {overlay: 'rgba(255,0,0,0.5)', filter: 'contrast(200%)', particles: 'fuego'}); Sfx.play(100, 'sawtooth', 2, 0.2); },
-            "dios": () => { cmd("Entidad suprema.", {filter: 'brightness(300%) drop-shadow(0 0 50px white)', anim: 'flotar'}); Sfx.play(1200, 'sine', 3, 0.1); }
+            "dios": () => { cmd("Entidad suprema.", {filter: 'brightness(300%) drop-shadow(0 0 50px white)', anim: 'flotar'}); Sfx.play(1200, 'sine', 3, 0.1); },
+
+            // Easter Eggs
+            "desnudo": () => { resetState(); nsfwBg.classList.add('active'); log.innerText = "Contenido censurado."; Sfx.play(150, 'square', 0.5, 0.2); },
+            "sexo": () => { resetState(); nsfwBg.classList.add('active'); log.innerText = "Contenido censurado."; Sfx.play(150, 'square', 0.5, 0.2); },
+            
+            // Nuevas Palabras
+            "alien": () => { cmd("Anomalía biológica.", {overlay: 'rgba(0,255,100,0.3)', filter: 'hue-rotate(120deg) contrast(150%)', anim: 'flotar'}); Sfx.play(2000, 'sine', 2, 0.1, 100); },
+            "robot": () => { cmd("Conversión cibernética.", {filter: 'grayscale(100%) contrast(200%)', overlay: 'rgba(100,100,100,0.5)'}); Sfx.noise(0.5, 0.1); },
+            "zombie": () => { cmd("Necrosis tisular.", {filter: 'sepia(80%) hue-rotate(50deg)', overlay: 'rgba(50,100,0,0.3)', particles: 'sangre'}); Sfx.play(80, 'sawtooth', 2, 0.2); },
+            "estatica": () => { cmd("Interferencia de señal.", {particles: 'estatica', filter: 'grayscale(100%)'}); Sfx.noise(2, 0.5); },
+            "glitch": () => { cmd("Error de renderizado.", {anim: 'glitch'}); Sfx.noise(0.2, 0.8); },
+            "neon": () => { cmd("Emisión luminiscente.", {particles: 'neon', filter: 'contrast(200%) saturate(300%)', bgColor: '#000'}); Sfx.play(400, 'square', 1, 0.1); },
+            "termico": () => { cmd("Espectro infrarrojo.", {filter: 'invert(100%) hue-rotate(180deg) saturate(400%)'}); Sfx.play(600, 'sine', 1, 0.1); },
+            "rayosx": () => { cmd("Radiación penetrante.", {filter: 'invert(100%) grayscale(100%) contrast(300%)', overlay: 'rgba(0,255,255,0.2)'}); Sfx.play(1500, 'sine', 0.2, 0.1); },
+            "supernova": () => { cmd("Colapso estelar.", {scale: 3, filter: 'brightness(500%) contrast(200%)', particles: 'fuego', bgColor: '#fff'}); Sfx.noise(3, 0.8); },
+            "agujeronegro": () => { cmd("Singularidad.", {scale: 0, filter: 'invert(100%)', bgColor: '#000'}); Sfx.play(20, 'sine', 3, 0.5); }
         };
+
+        // UI Event Listeners
+        document.getElementById('btn-accept-warning').addEventListener('click', () => {
+            Sfx.init();
+            warningModal.classList.add('hidden');
+            input.disabled = false;
+            input.focus();
+            log.innerText = "Sistema iniciado. Ingrese parámetro.";
+        });
+
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            menuModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-menu').addEventListener('click', () => {
+            menuModal.classList.add('hidden');
+            input.focus();
+        });
+
+        document.getElementById('btn-show-words').addEventListener('click', () => {
+            if(confirm("Advertencia: Ver el listado elimina el factor de descubrimiento. ¿Proceder?")) {
+                document.getElementById('btn-show-words').classList.add('hidden');
+                wordListContainer.classList.remove('hidden');
+                wordListContainer.innerText = Object.keys(cmds).join(', ');
+            }
+        });
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                canvas.style.transform = 'none'; // reset mirror
                 const v = input.value.toLowerCase().trim();
                 if (cmds[v]) cmds[v]();
                 else log.innerText = "Parámetro inválido.";
