@@ -8,8 +8,9 @@
         :root {
             --bg-color: #050505;
             --text-color: #00ff00;
-            --nucleo-color: #fff;
-            --shadow-color: rgba(255, 255, 255, 0.5);
+            --persona-color: #ffffff;
+            --piso-color: #111111;
+            --shadow-color: rgba(255, 255, 255, 0.2);
         }
 
         body, html {
@@ -39,20 +40,51 @@
             transition: all 0.5s ease;
         }
 
-        #nucleo {
-            width: 50px;
-            height: 50px;
-            background-color: var(--nucleo-color);
-            border-radius: 50%;
-            box-shadow: 0 0 20px var(--shadow-color);
-            transition: all 0.5s ease;
+        #piso {
             position: absolute;
+            bottom: 0;
+            width: 200%;
+            height: 40%;
+            background: var(--piso-color);
+            transform: rotateX(70deg) translateY(50px);
+            transform-origin: bottom;
+            transition: all 0.5s ease;
+            box-shadow: inset 0 50px 100px rgba(0,0,0,0.9);
+            z-index: 1;
+        }
+
+        #persona {
+            position: relative;
+            width: 40px;
+            height: 110px;
+            transition: all 0.5s ease;
             z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            filter: drop-shadow(0 0 10px var(--shadow-color));
+        }
+
+        .cabeza {
+            width: 30px;
+            height: 30px;
+            background-color: var(--persona-color);
+            border-radius: 50%;
+            margin-bottom: 5px;
+            transition: all 0.5s ease;
+        }
+
+        .cuerpo {
+            width: 35px;
+            height: 75px;
+            background-color: var(--persona-color);
+            border-radius: 10px 10px 0 0;
+            transition: all 0.5s ease;
         }
 
         #ui-container {
             height: 80px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             border-top: 1px solid #333;
             display: flex;
             flex-direction: column;
@@ -86,7 +118,7 @@
 
         /* Clases Atmosféricas */
         .efecto-sangre #escenario { filter: sepia(100%) saturate(500%) hue-rotate(-50deg); }
-        .efecto-vacío #escenario { filter: brightness(0%) contrast(100%); }
+        .efecto-vacío #escenario { opacity: 0; }
         .efecto-niebla #escenario { filter: blur(5px); }
         .efecto-psicodelia #escenario { filter: hue-rotate(360deg) saturate(200%); animation: hueRave 2s infinite linear; }
         .efecto-antiguo #escenario { filter: grayscale(100%) contrast(150%); animation: grain 0.1s infinite; }
@@ -94,47 +126,51 @@
         .efecto-espejo #escenario { transform: scaleX(-1); }
         .efecto-pesadilla #escenario { filter: invert(100%) hue-rotate(180deg); }
         .efecto-sueño #escenario { filter: blur(2px) opacity(0.8); }
-        .efecto-asfixia #escenario { box-shadow: inset 0 0 150px 100px #000; }
-        .efecto-laberinto { background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 20px 20px; }
+        .efecto-laberinto #piso { background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 20px 20px; }
 
-        /* Clases Núcleo */
-        .nucleo-caos { animation: glitch 0.2s infinite; }
-        .nucleo-pulso { animation: pulse 1s infinite; }
-        .nucleo-float { animation: float 3s infinite ease-in-out; }
-        .nucleo-latido { animation: latido 0.8s infinite; }
-        .nucleo-gravedad { top: 90% !important; }
-        .nucleo-ascension { top: 10% !important; }
+        /* Clases Persona */
+        .persona-caos { animation: glitch 0.2s infinite; }
+        .persona-pulso { animation: pulse 1s infinite; }
+        .persona-float { animation: float 3s infinite ease-in-out; transform-origin: bottom; }
+        .persona-latido { animation: latido 0.8s infinite; }
+        .persona-gravedad { top: 30% !important; transform: scaleY(0.5); }
+        .persona-ascension { top: -20% !important; }
+        .persona-temblor { animation: shake 0.1s infinite; }
 
-        /* Clases Body */
+        /* Clases Globales */
         .shake { animation: shake 0.3s; animation-iteration-count: 2; }
-        .desnudo { all: initial !important; background: white !important; color: black !important; font-family: serif !important; }
 
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
-        @keyframes latido { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.3); } 30% { transform: scale(1); } 45% { transform: scale(1.3); } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
-        @keyframes glitch { 0% { transform: translate(0) skew(0deg); opacity: 1; } 20% { transform: translate(-5px, 2px) skew(5deg); opacity: 0.8; } 40% { transform: translate(5px, -2px) skew(-5deg); opacity: 0.9; } 60% { transform: translate(-2px, 0) skew(2deg); opacity: 1; } 100% { transform: translate(0) skew(0deg); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes latido { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.1); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
+        @keyframes shake { 0% { transform: translate(2px, 2px) rotate(1deg); } 50% { transform: translate(-2px, -2px) rotate(-1deg); } 100% { transform: translate(2px, -2px) rotate(1deg); } }
+        @keyframes glitch { 0% { transform: translate(0) skew(0deg); opacity: 1; } 20% { transform: translate(-5px, 2px) skew(10deg); opacity: 0.8; } 40% { transform: translate(5px, -2px) skew(-10deg); opacity: 0.9; } 60% { transform: translate(-2px, 0) skew(5deg); opacity: 1; } 100% { transform: translate(0) skew(0deg); } }
         @keyframes hueRave { 0% { filter: hue-rotate(0deg) saturate(200%); } 100% { filter: hue-rotate(360deg) saturate(200%); } }
         @keyframes grain { 0%, 100% { transform: translate(0, 0); } 10% { transform: translate(-1px, -1px); } 30% { transform: translate(1px, 1px); } }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        .ojo-spawner { position: absolute; width: 10px; height: 10px; background: white; border-radius: 50%; box-shadow: 0 0 10px white, 0 0 5px red inset; animation: parpadeo 4s infinite; }
-        .gota-sangre, .gota-sudor { position: absolute; width: 4px; height: 15px; border-radius: 50%; top: -20px; animation: caidaGota 2s linear forwards; }
-        .gota-sangre { background: red; }
-        .gota-sudor { background: rgba(255,255,255,0.5); width: 6px; height: 10px; }
-        .aracnido { position: absolute; width: 6px; height: 6px; background: #111; border-radius: 50%; animation: scurry 2s linear infinite; }
-        .particula-fuego { position: absolute; width: 8px; height: 8px; background: orange; border-radius: 50%; bottom: -10px; animation: subirFuego 1.5s linear forwards; }
+        /* Elementos Generados */
+        .ojo-spawner { position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; box-shadow: 0 0 10px white, 0 0 5px red inset; animation: parpadeo 4s infinite; z-index: 20; }
+        .gota-sangre, .gota-sudor { position: absolute; width: 4px; height: 15px; border-radius: 50%; top: -20px; animation: caidaGota 2s linear forwards; z-index: 20; }
+        .gota-sangre { background: darkred; }
+        .gota-sudor { background: rgba(255,255,255,0.4); width: 6px; height: 10px; }
+        .aracnido { position: absolute; width: 8px; height: 8px; background: #000; border-radius: 50%; animation: scurry 2s linear infinite; z-index: 20; }
+        .particula-fuego { position: absolute; width: 10px; height: 10px; background: orange; border-radius: 50%; bottom: 0; animation: subirFuego 1.5s linear forwards; z-index: 20; }
 
         @keyframes parpadeo { 0%, 90%, 100% { transform: scaleY(1); opacity: 1; } 95% { transform: scaleY(0.1); opacity: 0.3; } }
         @keyframes caidaGota { to { transform: translateY(110vh); } }
-        @keyframes scurry { 0% { transform: translate(0,0); } 25% { transform: translate(20px, 10px); } 50% { transform: translate(-10px, 30px); } 75% { transform: translate(15px, 5px); } 100% { transform: translate(0,0); } }
-        @keyframes subirFuego { to { transform: translateY(-50vh); opacity: 0; } }
+        @keyframes scurry { 0% { transform: translate(0,0); } 25% { transform: translate(30px, 15px); } 50% { transform: translate(-15px, 40px); } 75% { transform: translate(20px, 10px); } 100% { transform: translate(0,0); } }
+        @keyframes subirFuego { to { transform: translateY(-60vh) scale(0.5); opacity: 0; } }
     </style>
 </head>
 <body>
 
     <div id="escenario">
-        <div id="nucleo"></div>
+        <div id="piso"></div>
+        <div id="persona">
+            <div class="cabeza"></div>
+            <div class="cuerpo"></div>
+        </div>
     </div>
 
     <div id="ui-container">
@@ -147,14 +183,50 @@
         const feedback = document.getElementById('feedback');
         const cuerpo = document.body;
         const escenario = document.getElementById('escenario');
+        
+        // Motor de Audio Minimalista
+        const Sfx = {
+            ctx: null,
+            init: function() {
+                if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            play: function(freq, type, dur, vol, slideFreq = null) {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                if(slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + dur);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
+                osc.start();
+                osc.stop(this.ctx.currentTime + dur);
+            },
+            noise: function(dur, vol) {
+                this.init();
+                const bufferSize = this.ctx.sampleRate * dur;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = this.ctx.createGain();
+                noise.connect(gain);
+                gain.connect(this.ctx.destination);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
+                noise.start();
+            }
+        };
 
         function limpiarEfectos() {
             cuerpo.className = '';
-            escenario.innerHTML = '<div id="nucleo"></div>';
             cuerpo.style = '';
-            const nuevoNucleo = document.getElementById('nucleo');
-            nuevoNucleo.style = '';
-            return nuevoNucleo;
+            escenario.innerHTML = '<div id="piso"></div><div id="persona"><div class="cabeza"></div><div class="cuerpo"></div></div>';
+            return document.getElementById('persona');
         }
 
         function spawnElemento(claseCSS, cantidad = 1) {
@@ -173,99 +245,103 @@
             setTimeout(() => clearInterval(iv), timeout);
         }
 
-        const atm = (bg, txt, nBg, nSh, msg, nClase = '', bodyClase = '') => {
-            const n = limpiarEfectos();
+        const atm = (bg, txt, pColor, pSh, pColorHex, msg, pClase = '', bodyClase = '') => {
+            const p = limpiarEfectos();
             if(bg) cuerpo.style.setProperty('--bg-color', bg);
             if(txt) cuerpo.style.setProperty('--text-color', txt);
-            if(nBg) n.style.backgroundColor = nBg;
-            if(nSh) n.style.boxShadow = nSh;
-            if(nClase) n.classList.add(nClase);
+            if(pColor) {
+                cuerpo.style.setProperty('--piso-color', pColor);
+            }
+            if(pColorHex) {
+                cuerpo.style.setProperty('--persona-color', pColorHex);
+            }
+            if(pSh) p.style.filter = `drop-shadow(0 0 10px ${pSh})`;
+            if(pClase) p.classList.add(pClase);
             if(bodyClase) cuerpo.classList.add(bodyClase);
             feedback.textContent = msg;
-            return n;
+            return p;
         };
 
         const diccionario = {
-            "sangre": () => { atm('#050505', '#f00', '#fff', '', 'Viscoso.', '', 'efecto-sangre'); intervalSpawn('gota-sangre', 2, 5000); },
-            "miedo": () => { atm(null, null, null, null, 'Te observa.', 'nucleo-caos', 'shake'); },
-            "ojos": () => { atm(null, null, null, null, 'No estás solo.'); spawnElemento('ojo-spawner', 20); },
-            "oscuridad": () => { atm('#000', '#333', '#111', 'none', 'La luz se desvanece.'); },
-            "grito": () => { const n = atm(null, null, null, null, 'SILENCIO.', '', 'shake'); n.style.transform = 'scale(5)'; n.style.opacity = '0'; setTimeout(() => { n.style.transform = 'scale(1)'; n.style.opacity = '1'; }, 1000); },
-            "antiguo": () => { atm(null, null, null, null, 'Transmisión interrumpida.', '', 'efecto-antiguo'); },
-            "flotar": () => { atm(null, null, null, null, 'Gravedad cero.', 'nucleo-float'); },
-            "pulso": () => { atm(null, null, null, null, 'Ritmo detectado.', 'nucleo-pulso'); },
-            "calor": () => { atm('#200', '#f80', '#fa0', '0 0 50px red', 'Temperatura en aumento.'); },
-            "frio": () => { atm('#e0f7fa', '#006064', '#fff', '0 0 30px #81d4fa', 'Congelamiento.', '', 'efecto-niebla'); },
-            "caos": () => { atm(null, null, null, null, 'Inestabilidad crítica.', 'nucleo-caos', 'shake'); },
-            "psicodelia": () => { atm(null, null, null, null, 'Viaje iniciado.', '', 'efecto-psicodelia'); },
-            "matrix": () => { atm('#000', '#0f0', '#0f0', '0 0 20px #0f0', 'Despierta.'); },
-            "grande": () => { const n = atm(null, null, null, null, 'Expansión.'); n.style.transform = 'scale(4)'; },
-            "pequeño": () => { const n = atm(null, null, null, null, 'Compresión.'); n.style.transform = 'scale(0.2)'; },
-            "reset": () => { atm('#050505', '#0f0', '#fff', '0 0 20px rgba(255,255,255,0.5)', 'Sistema reiniciado.'); },
-            "vacío": () => { atm(null, null, 'transparent', 'none', 'Nada.', '', 'efecto-vacío'); },
-            "ayuda": () => { feedback.textContent = "Busca en el interior."; },
-            
-            // Nuevas palabras
-            "deseo": () => { atm('#1a000d', '#ff66b2', '#ff1a75', '0 0 40px #ff66b2', 'Atracción.', 'nucleo-pulso'); },
-            "lujuria": () => { atm('#330000', '#ff0040', '#cc0000', '0 0 50px #ff0040', 'Instinto.', 'nucleo-latido', 'efecto-niebla'); },
-            "caricia": () => { atm('#0f0f1a', '#b3b3ff', '#e6e6ff', '0 0 30px #b3b3ff', 'Contacto suave.', 'nucleo-float'); },
-            "beso": () => { const n = atm('#1a001a', '#ff99ff', '#ff33cc', '0 0 60px #ff99ff', 'Conexión.'); n.style.borderRadius = '20px 50px 50px 20px'; },
-            "gemido": () => { atm(null, null, null, null, 'Sonido en la oscuridad.', 'nucleo-caos', 'shake'); },
-            "seduccion": () => { atm('#1a0033', '#cc99ff', '#9933ff', '0 0 40px #cc99ff', 'Aproximación.', '', 'efecto-sueño'); },
-            "pasion": () => { atm('#4d0000', '#ff3300', '#ff6600', '0 0 60px #ff0000', 'Ignición.', 'nucleo-pulso'); intervalSpawn('particula-fuego', 3, 2000); },
-            "veneno": () => { atm('#001a00', '#33ff33', '#00cc00', '0 0 30px #33ff33', 'Intoxicación.', 'nucleo-caos'); },
-            "aracnido": () => { atm(null, null, null, null, 'Plaga.'); spawnElemento('aracnido', 30); },
-            "abismo": () => { const n = atm('#000', '#222', '#000', '0 0 100px #000 inset', 'Caída libre.'); n.style.transform = 'scale(0)'; },
-            "eco": () => { const n = atm(null, null, null, null, 'Reverberación.'); n.style.boxShadow = '20px 0 0 #555, -20px 0 0 #555'; },
-            "sombra": () => { atm('#111', '#444', '#000', 'none', 'Ausencia.'); },
-            "fuego": () => { atm('#2a0800', '#ffaa00', '#ff5500', '0 0 50px #ff0000', 'Combustión.'); intervalSpawn('particula-fuego', 5, 4000); },
-            "agua": () => { atm('#001133', '#00aaff', '#0055ff', '0 0 40px #00aaff', 'Inmersión.', 'nucleo-float'); },
-            "viento": () => { const n = atm('#050505', '#aaa', '#fff', '0 0 20px #fff', 'Corriente.'); n.style.transform = 'translateX(50vw)'; },
-            "tierra": () => { atm('#1a1100', '#aa7700', '#553300', 'none', 'Densidad.', '', 'shake'); },
-            "dios": () => { atm('#fff', '#000', '#fff', '0 0 100px #fff', 'Presencia.'); cuerpo.style.filter = 'brightness(200%)'; },
-            "diablo": () => { atm('#300', '#f00', '#000', '0 0 50px #f00', 'Condenación.', 'nucleo-caos'); },
-            "dolor": () => { atm('#200', '#f00', '#f00', '0 0 10px #f00', 'Sufrimiento.', 'nucleo-caos', 'shake'); },
-            "placer": () => { atm('#1a0d16', '#ffb3e6', '#ffe6f2', '0 0 50px #ffb3e6', 'Éxtasis.', 'nucleo-float'); },
-            "asfixia": () => { atm(null, '#f00', null, null, 'Falta de oxígeno.', '', 'efecto-asfixia'); },
-            "latido": () => { atm(null, null, '#ff1a1a', '0 0 30px #ff1a1a', 'Vitalidad.', 'nucleo-latido'); },
-            "espejo": () => { atm(null, null, null, null, 'Reflejo.', '', 'efecto-espejo'); },
-            "cristal": () => { const n = atm(null, null, 'transparent', 'none', 'Fragilidad.'); n.style.border = '1px solid #fff'; n.style.borderRadius = '0'; },
-            "locura": () => { atm('#110', '#ff0', '#f0f', '0 0 50px #0ff', 'Pérdida de razón.', 'nucleo-caos', 'efecto-psicodelia'); },
-            "silencio": () => { const n = atm('#000', '#111', '#111', 'none', '...'); n.style.animation = 'none'; },
-            "luz": () => { atm('#eee', '#000', '#fff', '0 0 100px #fff', 'Iluminación.'); },
-            "fantasma": () => { const n = atm(null, null, 'rgba(255,255,255,0.2)', 'none', 'Aparición.', 'nucleo-float'); },
-            "zombie": () => { atm('#0a140a', '#33ff33', '#1a331a', '0 0 10px #33ff33', 'Putrefacción.'); },
-            "infierno": () => { atm('#400', '#f80', '#f00', '0 0 100px #f80', 'Fuego eterno.', 'nucleo-caos'); intervalSpawn('particula-fuego', 8, 5000); },
-            "cielo": () => { atm('#e6f7ff', '#0088cc', '#fff', '0 0 50px #fff', 'Ascensión.', 'nucleo-float'); },
-            "tentaculo": () => { const n = atm(null, null, '#330066', '0 0 20px #9900ff', 'Profundidades.'); n.style.height = '200px'; n.style.width = '20px'; n.classList.add('nucleo-caos'); },
-            "desnudo": () => { atm('#fff', '#000', '#000', 'none', 'Expuesto.', '', 'desnudo'); },
-            "piel": () => { atm('#ffe6cc', '#994d00', '#ffcc99', '0 0 20px #ffcc99', 'Superficie.', '', 'efecto-sueño'); },
-            "sudor": () => { atm(null, null, null, null, 'Exudación.'); intervalSpawn('gota-sudor', 3, 4000); },
-            "misterio": () => { atm('#05051a', '#aaa', '#223', '0 0 20px #557', 'Incógnita.', '', 'efecto-niebla'); },
-            "tumba": () => { const n = atm('#111', '#555', '#444', 'none', 'Descanso.'); n.style.borderRadius = '5px 5px 0 0'; n.style.width = '40px'; n.style.height = '60px'; },
-            "reloj": () => { const n = atm(null, null, null, null, 'Tiempo.', '', 'efecto-vertigo'); n.style.width = '2px'; n.style.height = '60px'; n.style.transformOrigin = 'bottom'; },
-            "magia": () => { atm('#1a0033', '#f0f', '#f0f', '0 0 50px #0ff', 'Conjuración.', 'nucleo-float'); },
-            "hipnosis": () => { atm(null, null, null, null, 'Trance.', '', 'efecto-vertigo'); escenario.style.background = 'repeating-radial-gradient(circle, #000 10px, #fff 20px)'; },
-            "vertigo": () => { atm(null, null, null, null, 'Mareo.', '', 'efecto-vertigo'); },
-            "gravedad": () => { atm(null, null, null, null, 'Atracción física.', 'nucleo-gravedad'); },
-            "ascension": () => { atm(null, null, null, null, 'Elevación.', 'nucleo-ascension'); },
-            "explosion": () => { const n = atm('#fff', '#000', '#f00', '0 0 100px #f00', 'Detonación.', '', 'shake'); n.style.transform = 'scale(20)'; setTimeout(() => n.style.opacity = '0', 200); },
-            "implosion": () => { const n = atm('#000', '#fff', '#fff', 'none', 'Colapso.'); n.style.transform = 'scale(0)'; },
-            "secreto": () => { atm(null, 'transparent', null, null, 'Oculto.', '', 'efecto-niebla'); feedback.style.textShadow = '0 0 5px #fff'; },
-            "pesadilla": () => { atm(null, null, null, null, 'Terror nocturno.', 'nucleo-caos', 'efecto-pesadilla'); },
-            "sueño": () => { atm('#001a33', '#80bfff', '#cce6ff', '0 0 40px #80bfff', 'Fantasía.', 'nucleo-float', 'efecto-sueño'); },
-            "demonio": () => { const n = atm('#200', '#f00', '#000', '0 0 50px #f00', 'Entidad.'); n.style.borderTop = '20px solid #f00'; n.classList.add('nucleo-caos'); },
-            "angel": () => { atm('#fff', '#ccaa00', '#fff', '0 0 100px #ffeb3b', 'Custodio.', 'nucleo-float'); },
-            "laberinto": () => { atm(null, null, null, null, 'Perdido.', '', 'efecto-laberinto'); }
+            "sangre": () => { atm('#0a0000', '#f00', '#200', 'red', '#ff3333', 'Viscoso.', '', 'efecto-sangre'); intervalSpawn('gota-sangre', 2, 5000); Sfx.noise(3, 0.2); },
+            "miedo": () => { atm('#000', '#555', '#050505', 'none', '#fff', 'Temblores.', 'persona-temblor', 'shake'); Sfx.play(900, 'sawtooth', 0.5, 0.1, 800); },
+            "ojos": () => { atm('#000', '#fff', '#000', 'none', '#222', 'Observado.'); spawnElemento('ojo-spawner', 20); Sfx.play(1500, 'sine', 0.1, 0.1); },
+            "oscuridad": () => { atm('#000', '#333', '#000', 'none', '#111', 'Visibilidad nula.'); Sfx.play(60, 'sine', 2, 0.5); },
+            "grito": () => { const p = atm('#fff', '#000', '#fff', 'none', '#000', 'SILENCIO.', '', 'shake'); p.style.transform = 'scale(5)'; setTimeout(() => { p.style.transform = 'scale(1)'; atm('#050505', '#0f0', '#111', 'rgba(255,255,255,0.2)', '#fff', ''); }, 500); Sfx.play(2000, 'sawtooth', 0.8, 0.3, 100); },
+            "antiguo": () => { atm(null, null, null, null, null, 'Degradación.', '', 'efecto-antiguo'); Sfx.noise(2, 0.1); },
+            "flotar": () => { atm(null, null, null, null, null, 'Sin gravedad.', 'persona-float'); Sfx.play(400, 'sine', 2, 0.1, 600); },
+            "pulso": () => { atm(null, null, null, null, null, 'Ritmo.', 'persona-pulso'); },
+            "calor": () => { atm('#200', '#f80', '#310', 'orange', '#ff7700', 'Temperatura crítica.'); Sfx.noise(2, 0.05); },
+            "frio": () => { atm('#e0f7fa', '#006064', '#b2ebf2', 'cyan', '#4dd0e1', 'Hipotermia.', 'persona-temblor', 'efecto-niebla'); Sfx.noise(3, 0.1); },
+            "caos": () => { atm(null, null, null, 'red', null, 'Colapso.', 'persona-caos', 'shake'); Sfx.play(150, 'square', 1, 0.2, 50); },
+            "psicodelia": () => { atm(null, null, null, null, null, 'Alteración sensorial.', '', 'efecto-psicodelia'); Sfx.play(600, 'sine', 2, 0.1, 1200); },
+            "matrix": () => { atm('#000', '#0f0', '#020', '#0f0', '#0f0', 'Despierta.'); Sfx.play(800, 'square', 0.1, 0.1); },
+            "grande": () => { const p = atm(null, null, null, null, null, 'Crecimiento.'); p.style.transform = 'scale(3)'; p.style.transformOrigin = 'bottom'; Sfx.play(100, 'sine', 1, 0.2); },
+            "pequeño": () => { const p = atm(null, null, null, null, null, 'Contracción.'); p.style.transform = 'scale(0.3)'; p.style.transformOrigin = 'bottom'; Sfx.play(800, 'sine', 1, 0.1); },
+            "reset": () => { atm('#050505', '#0f0', '#111', 'rgba(255,255,255,0.2)', '#fff', 'Normalidad restaurada.'); Sfx.play(440, 'sine', 0.5, 0.1); },
+            "vacío": () => { atm('#000', '#333', '#000', 'none', 'transparent', 'Ausencia.', '', 'efecto-vacío'); Sfx.play(40, 'sine', 3, 0.5); },
+            "ayuda": () => { feedback.textContent = "Interactúa con el entorno y la entidad."; },
+            "deseo": () => { atm('#1a000d', '#ff66b2', '#200010', '#ff66b2', '#ff99cc', 'Atracción.', 'persona-pulso'); Sfx.play(300, 'sine', 1, 0.1, 350); },
+            "lujuria": () => { atm('#330000', '#ff0040', '#400000', '#ff0040', '#ff3333', 'Instinto.', 'persona-latido', 'efecto-niebla'); Sfx.play(200, 'triangle', 1, 0.1); },
+            "caricia": () => { atm('#0f0f1a', '#b3b3ff', '#101020', '#b3b3ff', '#ccccff', 'Tacto.', 'persona-float'); Sfx.noise(1, 0.05); },
+            "beso": () => { const p = atm('#1a001a', '#ff99ff', '#200020', '#ff33cc', '#ffccff', 'Contacto.'); p.style.transform = 'scaleX(1.2)'; Sfx.play(500, 'sine', 0.3, 0.1, 600); },
+            "gemido": () => { atm(null, null, null, null, null, 'Respuesta vocal.', 'persona-caos', 'shake'); Sfx.play(700, 'sine', 0.8, 0.1, 500); },
+            "seduccion": () => { atm('#1a0033', '#cc99ff', '#200040', '#9933ff', '#e6ccff', 'Acercamiento.', '', 'efecto-sueño'); },
+            "pasion": () => { atm('#4d0000', '#ff3300', '#500000', '#ff0000', '#ff6666', 'Fervor.', 'persona-pulso'); intervalSpawn('particula-fuego', 3, 2000); Sfx.noise(2, 0.1); },
+            "veneno": () => { atm('#001a00', '#33ff33', '#002000', '#33ff33', '#88ff88', 'Toxicidad.', 'persona-temblor'); Sfx.play(150, 'sawtooth', 2, 0.1); },
+            "aracnido": () => { atm(null, null, null, null, null, 'Infestación.'); spawnElemento('aracnido', 30); Sfx.noise(1, 0.2); },
+            "abismo": () => { const p = atm('#000', '#222', '#000', 'none', '#111', 'Descenso.'); p.style.transform = 'scale(0)'; Sfx.play(200, 'sine', 2, 0.2, 20); },
+            "eco": () => { const p = atm(null, null, null, null, null, 'Reverberación.'); p.style.boxShadow = '20px 0 0 rgba(255,255,255,0.3), -20px 0 0 rgba(255,255,255,0.3)'; Sfx.play(400, 'sine', 0.5, 0.1); setTimeout(()=>Sfx.play(400, 'sine', 0.5, 0.05), 500); },
+            "sombra": () => { atm('#111', '#444', '#000', 'none', '#000', 'Proyección oscura.'); },
+            "fuego": () => { atm('#2a0800', '#ffaa00', '#301000', 'red', '#ff5500', 'Ignición.'); intervalSpawn('particula-fuego', 5, 4000); Sfx.noise(4, 0.2); },
+            "agua": () => { atm('#001133', '#00aaff', '#002244', 'cyan', '#88ccff', 'Sumersión.', 'persona-float'); Sfx.noise(3, 0.05); },
+            "viento": () => { const p = atm('#050505', '#aaa', '#111', '#fff', '#ddd', 'Ráfaga.'); p.style.transform = 'translateX(20vw) skewX(20deg)'; Sfx.noise(2, 0.3); },
+            "tierra": () => { atm('#1a1100', '#aa7700', '#2a1a00', 'none', '#8b5a2b', 'Densidad.', '', 'shake'); Sfx.play(80, 'square', 1, 0.3); },
+            "dios": () => { atm('#fff', '#000', '#eee', '#fff', '#fff', 'Omnipresencia.'); cuerpo.style.filter = 'brightness(200%)'; Sfx.play(1200, 'sine', 3, 0.1); },
+            "diablo": () => { atm('#300', '#f00', '#100', 'red', '#000', 'Corrupción.', 'persona-caos'); Sfx.play(100, 'sawtooth', 2, 0.2); },
+            "dolor": () => { atm('#200', '#f00', '#111', 'red', '#ffaaaa', 'Daño tisular.', 'persona-temblor', 'shake'); Sfx.play(600, 'sawtooth', 0.3, 0.2, 400); },
+            "placer": () => { atm('#1a0d16', '#ffb3e6', '#20101c', '#ffb3e6', '#ffe6f2', 'Estímulo positivo.', 'persona-float'); Sfx.play(400, 'sine', 1, 0.1, 500); },
+            "asfixia": () => { atm('#000', '#f00', '#000', 'none', '#444', 'Falta de oxígeno.', 'persona-temblor'); Sfx.noise(2, 0.1); },
+            "latido": () => { atm(null, null, null, 'red', null, 'Ritmo cardíaco.', 'persona-latido'); Sfx.play(50, 'sine', 0.2, 0.5); setTimeout(()=>Sfx.play(50, 'sine', 0.2, 0.5), 300); },
+            "espejo": () => { atm(null, null, null, null, null, 'Reflexión.', '', 'efecto-espejo'); Sfx.play(800, 'sine', 0.2, 0.1, 800); },
+            "cristal": () => { atm(null, null, null, 'none', 'rgba(255,255,255,0.3)', 'Estructura frágil.'); Sfx.play(2000, 'sine', 0.1, 0.1); },
+            "locura": () => { atm('#110', '#ff0', '#220', '#0ff', '#f0f', 'Deterioro cognitivo.', 'persona-caos', 'efecto-psicodelia'); Sfx.play(400, 'sawtooth', 2, 0.1, 800); },
+            "silencio": () => { const p = atm('#000', '#111', '#000', 'none', '#222', '...'); p.style.animation = 'none'; },
+            "luz": () => { atm('#eee', '#000', '#ddd', '#fff', '#fff', 'Fotones.'); Sfx.play(1000, 'sine', 1, 0.1); },
+            "fantasma": () => { atm(null, null, null, 'none', 'rgba(255,255,255,0.2)', 'Espectro.', 'persona-float'); Sfx.noise(3, 0.05); },
+            "zombie": () => { atm('#0a140a', '#33ff33', '#102010', '#33ff33', '#558855', 'Necrosis.'); Sfx.play(100, 'sawtooth', 1, 0.1); },
+            "infierno": () => { atm('#400', '#f80', '#200', 'red', '#ff3300', 'Condena.', 'persona-caos'); intervalSpawn('particula-fuego', 8, 5000); Sfx.play(80, 'square', 3, 0.2); },
+            "cielo": () => { atm('#e6f7ff', '#0088cc', '#d0f0ff', 'white', '#ffffff', 'Elevación.', 'persona-float'); Sfx.play(800, 'sine', 3, 0.1, 900); },
+            "tentaculo": () => { const p = atm(null, null, null, '#9900ff', '#330066', 'Mutación.'); p.style.height = '150px'; p.style.width = '15px'; p.style.borderRadius = '50px'; p.classList.add('persona-caos'); Sfx.noise(1, 0.1); },
+            "desnudo": () => { atm(null, null, null, 'none', '#ffcc99', 'Tejido expuesto.'); },
+            "piel": () => { atm('#ffe6cc', '#994d00', '#eed5bd', '#ffcc99', '#ffcc99', 'Superficie dérmica.', '', 'efecto-sueño'); },
+            "sudor": () => { atm(null, null, null, null, null, 'Transpiración.'); intervalSpawn('gota-sudor', 3, 4000); },
+            "misterio": () => { atm('#05051a', '#aaa', '#101020', '#557', '#88a', 'Datos insuficientes.', '', 'efecto-niebla'); Sfx.play(300, 'sine', 2, 0.1); },
+            "tumba": () => { const p = atm('#111', '#555', '#222', 'none', '#555', 'Confinamiento.'); p.style.borderRadius = '5px 5px 0 0'; p.style.width = '50px'; p.style.height = '80px'; p.innerHTML = ''; Sfx.play(100, 'square', 1, 0.2); },
+            "reloj": () => { const p = atm(null, null, null, null, '#fff', 'Cronometría.', '', 'efecto-vertigo'); p.style.width = '2px'; p.style.height = '80px'; p.style.transformOrigin = 'bottom'; p.innerHTML = ''; Sfx.play(800, 'sine', 0.05, 0.1); setTimeout(()=>Sfx.play(800, 'sine', 0.05, 0.1), 500); },
+            "magia": () => { atm('#1a0033', '#f0f', '#200040', '#0ff', '#ff00ff', 'Anomalía física.', 'persona-float'); Sfx.play(600, 'sine', 1, 0.1, 1000); },
+            "hipnosis": () => { atm(null, null, null, null, null, 'Sugestibilidad.', '', 'efecto-vertigo'); escenario.style.background = 'repeating-radial-gradient(circle, #000 10px, #fff 20px)'; Sfx.play(400, 'sine', 3, 0.1, 350); },
+            "vertigo": () => { atm(null, null, null, null, null, 'Desorientación espacial.', '', 'efecto-vertigo'); Sfx.play(200, 'sawtooth', 2, 0.1, 400); },
+            "gravedad": () => { atm(null, null, null, null, null, 'Fuerza G incrementada.', 'persona-gravedad'); Sfx.play(100, 'sine', 1, 0.2, 50); },
+            "ascension": () => { atm(null, null, null, null, null, 'Fuerza G negativa.', 'persona-ascension'); Sfx.play(600, 'sine', 2, 0.1, 800); },
+            "explosion": () => { const p = atm('#fff', '#000', '#fff', '#f00', '#f00', 'Expansión cinética.', '', 'shake'); p.style.transform = 'scale(20)'; setTimeout(() => p.style.opacity = '0', 200); Sfx.noise(1, 0.8); },
+            "implosion": () => { const p = atm('#000', '#fff', '#000', 'none', '#fff', 'Colapso gravitacional.'); p.style.transform = 'scale(0)'; Sfx.play(800, 'sawtooth', 0.5, 0.3, 100); },
+            "secreto": () => { atm(null, 'transparent', null, null, 'rgba(255,255,255,0.1)', 'Encriptación.', '', 'efecto-niebla'); feedback.style.textShadow = '0 0 5px #fff'; },
+            "pesadilla": () => { atm(null, null, null, null, '#000', 'Actividad neuronal adversa.', 'persona-caos', 'efecto-pesadilla'); Sfx.play(200, 'sawtooth', 2, 0.1, 150); },
+            "sueño": () => { atm('#001a33', '#80bfff', '#002040', '#80bfff', '#cce6ff', 'Fase REM.', 'persona-float', 'efecto-sueño'); Sfx.play(400, 'sine', 3, 0.05); },
+            "demonio": () => { const p = atm('#200', '#f00', '#300', 'red', '#000', 'Entidad hostil.'); p.classList.add('persona-caos'); Sfx.play(100, 'sawtooth', 2, 0.2, 80); },
+            "angel": () => { atm('#fff', '#ccaa00', '#eee', '#ffeb3b', '#fff', 'Entidad benigna.', 'persona-float'); Sfx.play(1000, 'sine', 3, 0.1); },
+            "laberinto": () => { atm(null, null, null, null, null, 'Ruta no calculada.', '', 'efecto-laberinto'); Sfx.play(300, 'square', 1, 0.05); }
         };
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
+                Sfx.init(); // Requiere interacción para AudioContext
                 const accion = input.value.toLowerCase().trim();
                 if (diccionario[accion]) {
                     diccionario[accion]();
                 } else {
-                    feedback.textContent = `"${accion}" no invoca nada aquí.`;
+                    feedback.textContent = `"${accion}" comando no reconocido.`;
                     input.style.borderBottomColor = 'red';
                     setTimeout(() => input.style.borderBottomColor = 'var(--text-color)', 500);
                 }
