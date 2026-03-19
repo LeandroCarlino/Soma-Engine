@@ -2,349 +2,228 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Oráculo de la Habitación</title>
+    <title>Motor Canvas - Entidad Fotorrealista</title>
     <style>
-        :root {
-            --bg-color: #050505;
-            --text-color: #00ff00;
-            --persona-color: #ffffff;
-            --piso-color: #111111;
-            --shadow-color: rgba(255, 255, 255, 0.2);
-        }
-
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            transition: background-color 0.5s ease, color 0.5s ease;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #050505; color: #0f0;
+            font-family: monospace; display: flex; flex-direction: column;
+            overflow: hidden; transition: background-color 0.5s;
         }
-
-        #escenario {
-            flex: 1;
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            perspective: 1000px;
-            transition: all 0.5s ease;
+        #stage-container {
+            flex: 1; display: flex; justify-content: center; align-items: center;
         }
-
-        #piso {
-            position: absolute;
-            bottom: 0;
-            width: 200%;
-            height: 40%;
-            background: var(--piso-color);
-            transform: rotateX(70deg) translateY(50px);
-            transform-origin: bottom;
-            transition: all 0.5s ease;
-            box-shadow: inset 0 50px 100px rgba(0,0,0,0.9);
-            z-index: 1;
+        canvas {
+            image-rendering: pixelated; transition: filter 0.5s;
         }
-
-        #persona {
-            position: relative;
-            width: 40px;
-            height: 110px;
-            transition: all 0.5s ease;
+        #ui {
+            height: 60px; background: #000; border-top: 1px solid #333;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            filter: drop-shadow(0 0 10px var(--shadow-color));
         }
-
-        .cabeza {
-            width: 30px;
-            height: 30px;
-            background-color: var(--persona-color);
-            border-radius: 50%;
-            margin-bottom: 5px;
-            transition: all 0.5s ease;
+        input {
+            width: 80%; max-width: 600px; background: transparent; border: none; 
+            border-bottom: 2px solid #0f0; color: #0f0; font-size: 1.2rem; 
+            text-align: center; outline: none; text-transform: lowercase;
         }
-
-        .cuerpo {
-            width: 35px;
-            height: 75px;
-            background-color: var(--persona-color);
-            border-radius: 10px 10px 0 0;
-            transition: all 0.5s ease;
-        }
-
-        #ui-container {
-            height: 80px;
-            background: rgba(0, 0, 0, 0.9);
-            border-top: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 10px;
-            box-sizing: border-box;
-            z-index: 100;
-        }
-
-        #gameInput {
-            width: 80%;
-            max-width: 600px;
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid var(--text-color);
-            color: var(--text-color);
-            font-size: 1.2rem;
-            padding: 5px;
-            text-align: center;
-            outline: none;
-            transition: border-color 0.3s ease;
-        }
-
-        #feedback {
-            font-size: 0.8rem;
-            height: 1.2rem;
-            margin-top: 5px;
-            opacity: 0.7;
-        }
-
-        /* Clases Atmosféricas */
-        .efecto-sangre #escenario { filter: sepia(100%) saturate(500%) hue-rotate(-50deg); }
-        .efecto-vacío #escenario { opacity: 0; }
-        .efecto-niebla #escenario { filter: blur(5px); }
-        .efecto-psicodelia #escenario { filter: hue-rotate(360deg) saturate(200%); animation: hueRave 2s infinite linear; }
-        .efecto-antiguo #escenario { filter: grayscale(100%) contrast(150%); animation: grain 0.1s infinite; }
-        .efecto-vertigo #escenario { animation: spin 3s infinite linear; }
-        .efecto-espejo #escenario { transform: scaleX(-1); }
-        .efecto-pesadilla #escenario { filter: invert(100%) hue-rotate(180deg); }
-        .efecto-sueño #escenario { filter: blur(2px) opacity(0.8); }
-        .efecto-laberinto #piso { background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 20px 20px; }
-
-        /* Clases Persona */
-        .persona-caos { animation: glitch 0.2s infinite; }
-        .persona-pulso { animation: pulse 1s infinite; }
-        .persona-float { animation: float 3s infinite ease-in-out; transform-origin: bottom; }
-        .persona-latido { animation: latido 0.8s infinite; }
-        .persona-gravedad { top: 30% !important; transform: scaleY(0.5); }
-        .persona-ascension { top: -20% !important; }
-        .persona-temblor { animation: shake 0.1s infinite; }
-
-        /* Clases Globales */
-        .shake { animation: shake 0.3s; animation-iteration-count: 2; }
-
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        @keyframes latido { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.1); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
-        @keyframes shake { 0% { transform: translate(2px, 2px) rotate(1deg); } 50% { transform: translate(-2px, -2px) rotate(-1deg); } 100% { transform: translate(2px, -2px) rotate(1deg); } }
-        @keyframes glitch { 0% { transform: translate(0) skew(0deg); opacity: 1; } 20% { transform: translate(-5px, 2px) skew(10deg); opacity: 0.8; } 40% { transform: translate(5px, -2px) skew(-10deg); opacity: 0.9; } 60% { transform: translate(-2px, 0) skew(5deg); opacity: 1; } 100% { transform: translate(0) skew(0deg); } }
-        @keyframes hueRave { 0% { filter: hue-rotate(0deg) saturate(200%); } 100% { filter: hue-rotate(360deg) saturate(200%); } }
-        @keyframes grain { 0%, 100% { transform: translate(0, 0); } 10% { transform: translate(-1px, -1px); } 30% { transform: translate(1px, 1px); } }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* Elementos Generados */
-        .ojo-spawner { position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; box-shadow: 0 0 10px white, 0 0 5px red inset; animation: parpadeo 4s infinite; z-index: 20; }
-        .gota-sangre, .gota-sudor { position: absolute; width: 4px; height: 15px; border-radius: 50%; top: -20px; animation: caidaGota 2s linear forwards; z-index: 20; }
-        .gota-sangre { background: darkred; }
-        .gota-sudor { background: rgba(255,255,255,0.4); width: 6px; height: 10px; }
-        .aracnido { position: absolute; width: 8px; height: 8px; background: #000; border-radius: 50%; animation: scurry 2s linear infinite; z-index: 20; }
-        .particula-fuego { position: absolute; width: 10px; height: 10px; background: orange; border-radius: 50%; bottom: 0; animation: subirFuego 1.5s linear forwards; z-index: 20; }
-
-        @keyframes parpadeo { 0%, 90%, 100% { transform: scaleY(1); opacity: 1; } 95% { transform: scaleY(0.1); opacity: 0.3; } }
-        @keyframes caidaGota { to { transform: translateY(110vh); } }
-        @keyframes scurry { 0% { transform: translate(0,0); } 25% { transform: translate(30px, 15px); } 50% { transform: translate(-15px, 40px); } 75% { transform: translate(20px, 10px); } 100% { transform: translate(0,0); } }
-        @keyframes subirFuego { to { transform: translateY(-60vh) scale(0.5); opacity: 0; } }
+        #log { font-size: 0.8rem; margin-top: 5px; opacity: 0.7; }
     </style>
 </head>
 <body>
-
-    <div id="escenario">
-        <div id="piso"></div>
-        <div id="persona">
-            <div class="cabeza"></div>
-            <div class="cuerpo"></div>
-        </div>
+    <div id="stage-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
     </div>
-
-    <div id="ui-container">
-        <input type="text" id="gameInput" placeholder="Escribe aquí..." autofocus>
-        <div id="feedback"></div>
+    <div id="ui">
+        <input type="text" id="cmd" autofocus autocomplete="off">
+        <div id="log">Sistema iniciado. Ingrese parámetro.</div>
     </div>
 
     <script>
-        const input = document.getElementById('gameInput');
-        const feedback = document.getElementById('feedback');
-        const cuerpo = document.body;
-        const escenario = document.getElementById('escenario');
-        
-        // Motor de Audio Minimalista
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const input = document.getElementById('cmd');
+        const log = document.getElementById('log');
+
         const Sfx = {
             ctx: null,
             init: function() {
                 if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 if(this.ctx.state === 'suspended') this.ctx.resume();
             },
-            play: function(freq, type, dur, vol, slideFreq = null) {
-                this.init();
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                if(slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + dur);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
-                osc.start();
-                osc.stop(this.ctx.currentTime + dur);
+            play: function(f, t, d, v, f2=null) {
+                this.init(); const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+                if(f2) o.frequency.exponentialRampToValueAtTime(f2, this.ctx.currentTime + d);
+                o.connect(g); g.connect(this.ctx.destination);
+                g.gain.setValueAtTime(v, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + d);
+                o.start(); o.stop(this.ctx.currentTime + d);
             },
-            noise: function(dur, vol) {
-                this.init();
-                const bufferSize = this.ctx.sampleRate * dur;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                const noise = this.ctx.createBufferSource();
-                noise.buffer = buffer;
-                const gain = this.ctx.createGain();
-                noise.connect(gain);
-                gain.connect(this.ctx.destination);
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
-                noise.start();
+            noise: function(d, v) {
+                this.init(); const bs = this.ctx.sampleRate * d; const b = this.ctx.createBuffer(1, bs, this.ctx.sampleRate);
+                const data = b.getChannelData(0); for(let i=0; i<bs; i++) data[i] = Math.random() * 2 - 1;
+                const n = this.ctx.createBufferSource(); n.buffer = b; const g = this.ctx.createGain();
+                n.connect(g); g.connect(this.ctx.destination);
+                g.gain.setValueAtTime(v, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + d);
+                n.start();
             }
         };
 
-        function limpiarEfectos() {
-            cuerpo.className = '';
-            cuerpo.style = '';
-            escenario.innerHTML = '<div id="piso"></div><div id="persona"><div class="cabeza"></div><div class="cuerpo"></div></div>';
-            return document.getElementById('persona');
-        }
-
-        function spawnElemento(claseCSS, cantidad = 1) {
-            for(let i=0; i<cantidad; i++) {
-                const el = document.createElement('div');
-                el.className = claseCSS;
-                el.style.left = Math.random() * 100 + 'vw';
-                el.style.top = Math.random() * 100 + 'vh';
-                el.style.animationDelay = Math.random() * 2 + 's';
-                escenario.appendChild(el);
-            }
-        }
-
-        function intervalSpawn(claseCSS, cant, timeout) {
-            let iv = setInterval(() => spawnElemento(claseCSS, cant), 100);
-            setTimeout(() => clearInterval(iv), timeout);
-        }
-
-        const atm = (bg, txt, pColor, pSh, pColorHex, msg, pClase = '', bodyClase = '') => {
-            const p = limpiarEfectos();
-            if(bg) cuerpo.style.setProperty('--bg-color', bg);
-            if(txt) cuerpo.style.setProperty('--text-color', txt);
-            if(pColor) {
-                cuerpo.style.setProperty('--piso-color', pColor);
-            }
-            if(pColorHex) {
-                cuerpo.style.setProperty('--persona-color', pColorHex);
-            }
-            if(pSh) p.style.filter = `drop-shadow(0 0 10px ${pSh})`;
-            if(pClase) p.classList.add(pClase);
-            if(bodyClase) cuerpo.classList.add(bodyClase);
-            feedback.textContent = msg;
-            return p;
+        let state = {
+            overlay: 'none', filter: 'none', anim: 'none',
+            scale: 1, rotation: 0, bgColor: '#050505',
+            particles: 'none', alpha: 1
         };
 
-        const diccionario = {
-            "sangre": () => { atm('#0a0000', '#f00', '#200', 'red', '#ff3333', 'Viscoso.', '', 'efecto-sangre'); intervalSpawn('gota-sangre', 2, 5000); Sfx.noise(3, 0.2); },
-            "miedo": () => { atm('#000', '#555', '#050505', 'none', '#fff', 'Temblores.', 'persona-temblor', 'shake'); Sfx.play(900, 'sawtooth', 0.5, 0.1, 800); },
-            "ojos": () => { atm('#000', '#fff', '#000', 'none', '#222', 'Observado.'); spawnElemento('ojo-spawner', 20); Sfx.play(1500, 'sine', 0.1, 0.1); },
-            "oscuridad": () => { atm('#000', '#333', '#000', 'none', '#111', 'Visibilidad nula.'); Sfx.play(60, 'sine', 2, 0.5); },
-            "grito": () => { const p = atm('#fff', '#000', '#fff', 'none', '#000', 'SILENCIO.', '', 'shake'); p.style.transform = 'scale(5)'; setTimeout(() => { p.style.transform = 'scale(1)'; atm('#050505', '#0f0', '#111', 'rgba(255,255,255,0.2)', '#fff', ''); }, 500); Sfx.play(2000, 'sawtooth', 0.8, 0.3, 100); },
-            "antiguo": () => { atm(null, null, null, null, null, 'Degradación.', '', 'efecto-antiguo'); Sfx.noise(2, 0.1); },
-            "flotar": () => { atm(null, null, null, null, null, 'Sin gravedad.', 'persona-float'); Sfx.play(400, 'sine', 2, 0.1, 600); },
-            "pulso": () => { atm(null, null, null, null, null, 'Ritmo.', 'persona-pulso'); },
-            "calor": () => { atm('#200', '#f80', '#310', 'orange', '#ff7700', 'Temperatura crítica.'); Sfx.noise(2, 0.05); },
-            "frio": () => { atm('#e0f7fa', '#006064', '#b2ebf2', 'cyan', '#4dd0e1', 'Hipotermia.', 'persona-temblor', 'efecto-niebla'); Sfx.noise(3, 0.1); },
-            "caos": () => { atm(null, null, null, 'red', null, 'Colapso.', 'persona-caos', 'shake'); Sfx.play(150, 'square', 1, 0.2, 50); },
-            "psicodelia": () => { atm(null, null, null, null, null, 'Alteración sensorial.', '', 'efecto-psicodelia'); Sfx.play(600, 'sine', 2, 0.1, 1200); },
-            "matrix": () => { atm('#000', '#0f0', '#020', '#0f0', '#0f0', 'Despierta.'); Sfx.play(800, 'square', 0.1, 0.1); },
-            "grande": () => { const p = atm(null, null, null, null, null, 'Crecimiento.'); p.style.transform = 'scale(3)'; p.style.transformOrigin = 'bottom'; Sfx.play(100, 'sine', 1, 0.2); },
-            "pequeño": () => { const p = atm(null, null, null, null, null, 'Contracción.'); p.style.transform = 'scale(0.3)'; p.style.transformOrigin = 'bottom'; Sfx.play(800, 'sine', 1, 0.1); },
-            "reset": () => { atm('#050505', '#0f0', '#111', 'rgba(255,255,255,0.2)', '#fff', 'Normalidad restaurada.'); Sfx.play(440, 'sine', 0.5, 0.1); },
-            "vacío": () => { atm('#000', '#333', '#000', 'none', 'transparent', 'Ausencia.', '', 'efecto-vacío'); Sfx.play(40, 'sine', 3, 0.5); },
-            "ayuda": () => { feedback.textContent = "Interactúa con el entorno y la entidad."; },
-            "deseo": () => { atm('#1a000d', '#ff66b2', '#200010', '#ff66b2', '#ff99cc', 'Atracción.', 'persona-pulso'); Sfx.play(300, 'sine', 1, 0.1, 350); },
-            "lujuria": () => { atm('#330000', '#ff0040', '#400000', '#ff0040', '#ff3333', 'Instinto.', 'persona-latido', 'efecto-niebla'); Sfx.play(200, 'triangle', 1, 0.1); },
-            "caricia": () => { atm('#0f0f1a', '#b3b3ff', '#101020', '#b3b3ff', '#ccccff', 'Tacto.', 'persona-float'); Sfx.noise(1, 0.05); },
-            "beso": () => { const p = atm('#1a001a', '#ff99ff', '#200020', '#ff33cc', '#ffccff', 'Contacto.'); p.style.transform = 'scaleX(1.2)'; Sfx.play(500, 'sine', 0.3, 0.1, 600); },
-            "gemido": () => { atm(null, null, null, null, null, 'Respuesta vocal.', 'persona-caos', 'shake'); Sfx.play(700, 'sine', 0.8, 0.1, 500); },
-            "seduccion": () => { atm('#1a0033', '#cc99ff', '#200040', '#9933ff', '#e6ccff', 'Acercamiento.', '', 'efecto-sueño'); },
-            "pasion": () => { atm('#4d0000', '#ff3300', '#500000', '#ff0000', '#ff6666', 'Fervor.', 'persona-pulso'); intervalSpawn('particula-fuego', 3, 2000); Sfx.noise(2, 0.1); },
-            "veneno": () => { atm('#001a00', '#33ff33', '#002000', '#33ff33', '#88ff88', 'Toxicidad.', 'persona-temblor'); Sfx.play(150, 'sawtooth', 2, 0.1); },
-            "aracnido": () => { atm(null, null, null, null, null, 'Infestación.'); spawnElemento('aracnido', 30); Sfx.noise(1, 0.2); },
-            "abismo": () => { const p = atm('#000', '#222', '#000', 'none', '#111', 'Descenso.'); p.style.transform = 'scale(0)'; Sfx.play(200, 'sine', 2, 0.2, 20); },
-            "eco": () => { const p = atm(null, null, null, null, null, 'Reverberación.'); p.style.boxShadow = '20px 0 0 rgba(255,255,255,0.3), -20px 0 0 rgba(255,255,255,0.3)'; Sfx.play(400, 'sine', 0.5, 0.1); setTimeout(()=>Sfx.play(400, 'sine', 0.5, 0.05), 500); },
-            "sombra": () => { atm('#111', '#444', '#000', 'none', '#000', 'Proyección oscura.'); },
-            "fuego": () => { atm('#2a0800', '#ffaa00', '#301000', 'red', '#ff5500', 'Ignición.'); intervalSpawn('particula-fuego', 5, 4000); Sfx.noise(4, 0.2); },
-            "agua": () => { atm('#001133', '#00aaff', '#002244', 'cyan', '#88ccff', 'Sumersión.', 'persona-float'); Sfx.noise(3, 0.05); },
-            "viento": () => { const p = atm('#050505', '#aaa', '#111', '#fff', '#ddd', 'Ráfaga.'); p.style.transform = 'translateX(20vw) skewX(20deg)'; Sfx.noise(2, 0.3); },
-            "tierra": () => { atm('#1a1100', '#aa7700', '#2a1a00', 'none', '#8b5a2b', 'Densidad.', '', 'shake'); Sfx.play(80, 'square', 1, 0.3); },
-            "dios": () => { atm('#fff', '#000', '#eee', '#fff', '#fff', 'Omnipresencia.'); cuerpo.style.filter = 'brightness(200%)'; Sfx.play(1200, 'sine', 3, 0.1); },
-            "diablo": () => { atm('#300', '#f00', '#100', 'red', '#000', 'Corrupción.', 'persona-caos'); Sfx.play(100, 'sawtooth', 2, 0.2); },
-            "dolor": () => { atm('#200', '#f00', '#111', 'red', '#ffaaaa', 'Daño tisular.', 'persona-temblor', 'shake'); Sfx.play(600, 'sawtooth', 0.3, 0.2, 400); },
-            "placer": () => { atm('#1a0d16', '#ffb3e6', '#20101c', '#ffb3e6', '#ffe6f2', 'Estímulo positivo.', 'persona-float'); Sfx.play(400, 'sine', 1, 0.1, 500); },
-            "asfixia": () => { atm('#000', '#f00', '#000', 'none', '#444', 'Falta de oxígeno.', 'persona-temblor'); Sfx.noise(2, 0.1); },
-            "latido": () => { atm(null, null, null, 'red', null, 'Ritmo cardíaco.', 'persona-latido'); Sfx.play(50, 'sine', 0.2, 0.5); setTimeout(()=>Sfx.play(50, 'sine', 0.2, 0.5), 300); },
-            "espejo": () => { atm(null, null, null, null, null, 'Reflexión.', '', 'efecto-espejo'); Sfx.play(800, 'sine', 0.2, 0.1, 800); },
-            "cristal": () => { atm(null, null, null, 'none', 'rgba(255,255,255,0.3)', 'Estructura frágil.'); Sfx.play(2000, 'sine', 0.1, 0.1); },
-            "locura": () => { atm('#110', '#ff0', '#220', '#0ff', '#f0f', 'Deterioro cognitivo.', 'persona-caos', 'efecto-psicodelia'); Sfx.play(400, 'sawtooth', 2, 0.1, 800); },
-            "silencio": () => { const p = atm('#000', '#111', '#000', 'none', '#222', '...'); p.style.animation = 'none'; },
-            "luz": () => { atm('#eee', '#000', '#ddd', '#fff', '#fff', 'Fotones.'); Sfx.play(1000, 'sine', 1, 0.1); },
-            "fantasma": () => { atm(null, null, null, 'none', 'rgba(255,255,255,0.2)', 'Espectro.', 'persona-float'); Sfx.noise(3, 0.05); },
-            "zombie": () => { atm('#0a140a', '#33ff33', '#102010', '#33ff33', '#558855', 'Necrosis.'); Sfx.play(100, 'sawtooth', 1, 0.1); },
-            "infierno": () => { atm('#400', '#f80', '#200', 'red', '#ff3300', 'Condena.', 'persona-caos'); intervalSpawn('particula-fuego', 8, 5000); Sfx.play(80, 'square', 3, 0.2); },
-            "cielo": () => { atm('#e6f7ff', '#0088cc', '#d0f0ff', 'white', '#ffffff', 'Elevación.', 'persona-float'); Sfx.play(800, 'sine', 3, 0.1, 900); },
-            "tentaculo": () => { const p = atm(null, null, null, '#9900ff', '#330066', 'Mutación.'); p.style.height = '150px'; p.style.width = '15px'; p.style.borderRadius = '50px'; p.classList.add('persona-caos'); Sfx.noise(1, 0.1); },
-            "desnudo": () => { atm(null, null, null, 'none', '#ffcc99', 'Tejido expuesto.'); },
-            "piel": () => { atm('#ffe6cc', '#994d00', '#eed5bd', '#ffcc99', '#ffcc99', 'Superficie dérmica.', '', 'efecto-sueño'); },
-            "sudor": () => { atm(null, null, null, null, null, 'Transpiración.'); intervalSpawn('gota-sudor', 3, 4000); },
-            "misterio": () => { atm('#05051a', '#aaa', '#101020', '#557', '#88a', 'Datos insuficientes.', '', 'efecto-niebla'); Sfx.play(300, 'sine', 2, 0.1); },
-            "tumba": () => { const p = atm('#111', '#555', '#222', 'none', '#555', 'Confinamiento.'); p.style.borderRadius = '5px 5px 0 0'; p.style.width = '50px'; p.style.height = '80px'; p.innerHTML = ''; Sfx.play(100, 'square', 1, 0.2); },
-            "reloj": () => { const p = atm(null, null, null, null, '#fff', 'Cronometría.', '', 'efecto-vertigo'); p.style.width = '2px'; p.style.height = '80px'; p.style.transformOrigin = 'bottom'; p.innerHTML = ''; Sfx.play(800, 'sine', 0.05, 0.1); setTimeout(()=>Sfx.play(800, 'sine', 0.05, 0.1), 500); },
-            "magia": () => { atm('#1a0033', '#f0f', '#200040', '#0ff', '#ff00ff', 'Anomalía física.', 'persona-float'); Sfx.play(600, 'sine', 1, 0.1, 1000); },
-            "hipnosis": () => { atm(null, null, null, null, null, 'Sugestibilidad.', '', 'efecto-vertigo'); escenario.style.background = 'repeating-radial-gradient(circle, #000 10px, #fff 20px)'; Sfx.play(400, 'sine', 3, 0.1, 350); },
-            "vertigo": () => { atm(null, null, null, null, null, 'Desorientación espacial.', '', 'efecto-vertigo'); Sfx.play(200, 'sawtooth', 2, 0.1, 400); },
-            "gravedad": () => { atm(null, null, null, null, null, 'Fuerza G incrementada.', 'persona-gravedad'); Sfx.play(100, 'sine', 1, 0.2, 50); },
-            "ascension": () => { atm(null, null, null, null, null, 'Fuerza G negativa.', 'persona-ascension'); Sfx.play(600, 'sine', 2, 0.1, 800); },
-            "explosion": () => { const p = atm('#fff', '#000', '#fff', '#f00', '#f00', 'Expansión cinética.', '', 'shake'); p.style.transform = 'scale(20)'; setTimeout(() => p.style.opacity = '0', 200); Sfx.noise(1, 0.8); },
-            "implosion": () => { const p = atm('#000', '#fff', '#000', 'none', '#fff', 'Colapso gravitacional.'); p.style.transform = 'scale(0)'; Sfx.play(800, 'sawtooth', 0.5, 0.3, 100); },
-            "secreto": () => { atm(null, 'transparent', null, null, 'rgba(255,255,255,0.1)', 'Encriptación.', '', 'efecto-niebla'); feedback.style.textShadow = '0 0 5px #fff'; },
-            "pesadilla": () => { atm(null, null, null, null, '#000', 'Actividad neuronal adversa.', 'persona-caos', 'efecto-pesadilla'); Sfx.play(200, 'sawtooth', 2, 0.1, 150); },
-            "sueño": () => { atm('#001a33', '#80bfff', '#002040', '#80bfff', '#cce6ff', 'Fase REM.', 'persona-float', 'efecto-sueño'); Sfx.play(400, 'sine', 3, 0.05); },
-            "demonio": () => { const p = atm('#200', '#f00', '#300', 'red', '#000', 'Entidad hostil.'); p.classList.add('persona-caos'); Sfx.play(100, 'sawtooth', 2, 0.2, 80); },
-            "angel": () => { atm('#fff', '#ccaa00', '#eee', '#ffeb3b', '#fff', 'Entidad benigna.', 'persona-float'); Sfx.play(1000, 'sine', 3, 0.1); },
-            "laberinto": () => { atm(null, null, null, null, null, 'Ruta no calculada.', '', 'efecto-laberinto'); Sfx.play(300, 'square', 1, 0.05); }
+        const baseImg = new Image();
+        baseImg.src = 'imagen.png';
+        let frame = 0;
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.body.style.backgroundColor = state.bgColor;
+            canvas.style.filter = state.filter;
+
+            if (!baseImg.complete) { requestAnimationFrame(render); return; }
+
+            const aspect = baseImg.width / baseImg.height;
+            let h = 450 * state.scale;
+            let w = h * aspect;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            if (state.anim === 'flotar') offsetY = Math.sin(frame * 0.05) * 20;
+            if (state.anim === 'latido') { const s = 1 + Math.sin(frame * 0.15) * 0.05; w *= s; h *= s; }
+            if (state.anim === 'caos') { offsetX = (Math.random()-0.5)*10; offsetY = (Math.random()-0.5)*10; }
+            if (state.anim === 'terremoto') { offsetX = (Math.random()-0.5)*30; offsetY = (Math.random()-0.5)*30; }
+
+            const x = (canvas.width - w) / 2 + offsetX;
+            const y = (canvas.height - h) / 2 + offsetY;
+
+            ctx.save();
+            ctx.translate(canvas.width/2, canvas.height/2);
+            ctx.rotate(state.rotation);
+            ctx.translate(-canvas.width/2, -canvas.height/2);
+
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = state.alpha;
+            ctx.drawImage(baseImg, x, y, w, h);
+
+            ctx.globalCompositeOperation = 'source-atop';
+
+            if (state.overlay !== 'none') {
+                ctx.fillStyle = state.overlay;
+                ctx.fillRect(x, y, w, h);
+            }
+
+            if (state.particles === 'sangre') {
+                ctx.fillStyle = '#600';
+                for(let i=0; i<30; i++) {
+                    ctx.beginPath();
+                    ctx.arc(x + Math.abs(Math.sin(i*13))*w, y + (frame*3 + i*20)%h, 3 + Math.sin(i)*2, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            } else if (state.particles === 'fuego') {
+                for(let i=0; i<40; i++) {
+                    ctx.fillStyle = `rgba(255, ${Math.random()*150}, 0, 0.7)`;
+                    ctx.beginPath();
+                    ctx.arc(x + Math.random()*w, y + h - (frame*4 + i*15)%h, Math.random()*8, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            } else if (state.particles === 'sudor') {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                for(let i=0; i<20; i++) {
+                    ctx.beginPath();
+                    ctx.arc(x + Math.abs(Math.sin(i*7))*w, y + (frame + i*30)%h, 2, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            } else if (state.particles === 'burbujas') {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                for(let i=0; i<20; i++) {
+                    ctx.beginPath();
+                    ctx.arc(x + Math.abs(Math.cos(i*11))*w, y + h - (frame*2 + i*25)%h, 4 + Math.sin(i)*3, 0, Math.PI*2);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+            frame++;
+            requestAnimationFrame(render);
+        }
+
+        baseImg.onload = () => requestAnimationFrame(render);
+
+        const resetState = () => {
+            state = { overlay: 'none', filter: 'none', anim: 'none', scale: 1, rotation: 0, bgColor: '#050505', particles: 'none', alpha: 1 };
+        };
+
+        const cmd = (msg, mod) => {
+            Object.assign(state, mod);
+            log.innerText = msg;
+        };
+
+        const cmds = {
+            "normal": () => { resetState(); log.innerText = "Estado base."; },
+            "reset": () => { resetState(); log.innerText = "Reinicio de variables."; Sfx.play(440, 'sine', 0.5, 0.1); },
+            
+            "sangre": () => { cmd("Hemorragia.", {overlay: 'rgba(100,0,0,0.5)', particles: 'sangre'}); Sfx.noise(1, 0.2); },
+            "veneno": () => { cmd("Toxicidad.", {overlay: 'rgba(0,150,0,0.4)', filter: 'hue-rotate(90deg)'}); Sfx.play(150, 'sawtooth', 2, 0.1); },
+            "fuego": () => { cmd("Combustión.", {overlay: 'rgba(200,50,0,0.3)', particles: 'fuego', anim: 'caos'}); Sfx.noise(3, 0.3); },
+            "hielo": () => { cmd("Congelamiento.", {overlay: 'rgba(150,200,255,0.5)', filter: 'brightness(150%) blur(1px)'}); Sfx.play(1200, 'sine', 2, 0.1); },
+            "agua": () => { cmd("Inmersión.", {overlay: 'rgba(0,50,150,0.4)', particles: 'burbujas', anim: 'flotar'}); Sfx.noise(2, 0.1); },
+            "piedra": () => { cmd("Petrificación.", {overlay: 'rgba(100,100,100,0.8)', filter: 'grayscale(100%)'}); Sfx.play(80, 'square', 1, 0.3); },
+            "oro": () => { cmd("Transmutación.", {overlay: 'rgba(255,215,0,0.4)', filter: 'contrast(150%) brightness(120%) drop-shadow(0 0 20px gold)'}); Sfx.play(800, 'sine', 1, 0.1); },
+            "sombra": () => { cmd("Ausencia fotónica.", {overlay: 'rgba(0,0,0,0.8)', filter: 'contrast(200%)'}); Sfx.noise(2, 0.05); },
+            "ceniza": () => { cmd("Desintegración.", {overlay: 'rgba(50,50,50,0.6)', filter: 'grayscale(100%) blur(2px)'}); Sfx.noise(2, 0.2); },
+            
+            "grande": () => { cmd("Expansión masiva.", {scale: 1.8}); Sfx.play(100, 'sine', 1, 0.2); },
+            "pequeño": () => { cmd("Compresión masiva.", {scale: 0.4}); Sfx.play(800, 'sine', 1, 0.1); },
+            "flotar": () => { cmd("Gravedad cero.", {anim: 'flotar'}); Sfx.play(400, 'sine', 2, 0.1); },
+            "gravedad": () => { cmd("Fuerza G extrema.", {scale: 1, anim: 'none'}); state.offsetY = 150; Sfx.play(50, 'sawtooth', 1, 0.3); },
+            "espejo": () => { cmd("Inversión X.", {filter: 'invert(0%)', rotation: 0}); canvas.style.transform = 'scaleX(-1)'; },
+            "invisible": () => { cmd("Camuflaje óptico.", {alpha: 0.05}); Sfx.noise(1, 0.1); },
+            "fantasma": () => { cmd("Densidad espectral.", {alpha: 0.4, anim: 'flotar', filter: 'grayscale(100%) blur(1px)'}); Sfx.play(600, 'sine', 3, 0.05); },
+            "rotar": () => { cmd("Alteración de eje.", {rotation: Math.PI}); },
+
+            "caos": () => { cmd("Inestabilidad cuántica.", {anim: 'caos', filter: 'hue-rotate(180deg) saturate(300%)'}); Sfx.play(150, 'square', 1, 0.2); },
+            "miedo": () => { cmd("Respuesta simpática.", {anim: 'caos', filter: 'grayscale(80%) contrast(150%)', bgColor: '#000'}); Sfx.play(900, 'sawtooth', 0.5, 0.1); },
+            "psicodelia": () => { cmd("Alteración de percepción.", {filter: 'hue-rotate(270deg) saturate(500%) contrast(200%)'}); Sfx.play(400, 'sine', 2, 0.1, 800); },
+            "locura": () => { cmd("Fallo cognitivo.", {anim: 'terremoto', filter: 'invert(100%)'}); Sfx.play(200, 'sawtooth', 2, 0.2, 100); },
+            "sueño": () => { cmd("Fase REM.", {anim: 'flotar', filter: 'blur(3px) brightness(120%)'}); Sfx.play(300, 'sine', 4, 0.05); },
+            "pesadilla": () => { cmd("Terror subconsciente.", {overlay: 'rgba(0,0,0,0.5)', filter: 'invert(100%) contrast(200%)', bgColor: '#200'}); Sfx.play(80, 'sawtooth', 3, 0.4); },
+            "vacio": () => { cmd("Nulidad.", {alpha: 0, bgColor: '#000'}); Sfx.play(40, 'sine', 3, 0.5); },
+            "matrix": () => { cmd("Simulación revelada.", {overlay: 'rgba(0,255,0,0.3)', filter: 'contrast(300%) grayscale(100%) sepia(100%) hue-rotate(70deg)'}); Sfx.play(800, 'square', 0.1, 0.1); },
+
+            "deseo": () => { cmd("Atracción bioquímica.", {overlay: 'rgba(255,0,100,0.2)', anim: 'latido'}); Sfx.play(300, 'sine', 1, 0.1); },
+            "lujuria": () => { cmd("Instinto primario.", {overlay: 'rgba(200,0,0,0.3)', filter: 'contrast(120%) blur(1px)', anim: 'latido', bgColor: '#100'}); Sfx.play(200, 'triangle', 1, 0.1); },
+            "caricia": () => { cmd("Estimulación táctil.", {overlay: 'rgba(255,255,255,0.2)', filter: 'brightness(110%)'}); Sfx.noise(1, 0.05); },
+            "beso": () => { cmd("Contacto mucoso.", {overlay: 'rgba(255,100,200,0.3)', scale: 1.1}); Sfx.play(500, 'sine', 0.3, 0.1); },
+            "pasion": () => { cmd("Termogénesis.", {overlay: 'rgba(255,50,0,0.3)', particles: 'sudor', anim: 'latido'}); Sfx.noise(2, 0.1); },
+            "placer": () => { cmd("Endorfinas.", {filter: 'brightness(130%) contrast(90%)', anim: 'flotar'}); Sfx.play(400, 'sine', 1, 0.1); },
+            "asfixia": () => { cmd("Hipoxia.", {overlay: 'rgba(0,0,50,0.5)', filter: 'grayscale(50%)', anim: 'caos'}); Sfx.noise(2, 0.1); },
+            "sudor": () => { cmd("Exudación.", {particles: 'sudor'}); },
+            "desnudo": () => { resetState(); log.innerText = "Exposición epidérmica."; },
+            "piel": () => { cmd("Superficie anatómica.", {filter: 'sepia(30%) brightness(110%)'}); },
+            "latido": () => { cmd("Contracción miocárdica.", {anim: 'latido'}); Sfx.play(50, 'sine', 0.2, 0.5); setTimeout(()=>Sfx.play(50, 'sine', 0.2, 0.5), 300); },
+
+            "grito": () => { cmd("Emisión acústica extrema.", {anim: 'terremoto', scale: 1.2, filter: 'contrast(300%)'}); Sfx.play(2000, 'sawtooth', 0.8, 0.3, 100); },
+            "oscuridad": () => { cmd("Ausencia de fotones.", {filter: 'brightness(10%)', bgColor: '#000'}); },
+            "luz": () => { cmd("Saturación fotónica.", {filter: 'brightness(500%)', bgColor: '#fff'}); Sfx.play(1000, 'sine', 1, 0.1); },
+            "antiguo": () => { cmd("Deterioro temporal.", {filter: 'sepia(100%) contrast(150%) blur(1px)'}); },
+            "reloj": () => { cmd("Percepción temporal.", {rotation: Math.PI/4}); setInterval(() => state.rotation += 0.1, 1000); Sfx.play(800, 'sine', 0.05, 0.1); },
+            "terremoto": () => { cmd("Actividad sísmica.", {anim: 'terremoto'}); Sfx.noise(2, 0.5); },
+            "abismo": () => { cmd("Descenso infinito.", {scale: 0.1, bgColor: '#000'}); Sfx.play(200, 'sine', 2, 0.2, 20); },
+            "diablo": () => { cmd("Entidad hostil.", {overlay: 'rgba(255,0,0,0.5)', filter: 'contrast(200%)', particles: 'fuego'}); Sfx.play(100, 'sawtooth', 2, 0.2); },
+            "dios": () => { cmd("Entidad suprema.", {filter: 'brightness(300%) drop-shadow(0 0 50px white)', anim: 'flotar'}); Sfx.play(1200, 'sine', 3, 0.1); }
         };
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                Sfx.init(); // Requiere interacción para AudioContext
-                const accion = input.value.toLowerCase().trim();
-                if (diccionario[accion]) {
-                    diccionario[accion]();
-                } else {
-                    feedback.textContent = `"${accion}" comando no reconocido.`;
-                    input.style.borderBottomColor = 'red';
-                    setTimeout(() => input.style.borderBottomColor = 'var(--text-color)', 500);
-                }
+                canvas.style.transform = 'none'; // reset mirror
+                const v = input.value.toLowerCase().trim();
+                if (cmds[v]) cmds[v]();
+                else log.innerText = "Parámetro inválido.";
                 input.value = '';
             }
         });
