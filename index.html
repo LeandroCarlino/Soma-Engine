@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Oráculo de la Habitación</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #00ff00;
+            --nucleo-color: #fff;
+            --shadow-color: rgba(255, 255, 255, 0.5);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        #escenario {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            perspective: 1000px;
+            transition: all 0.5s ease;
+        }
+
+        #nucleo {
+            width: 50px;
+            height: 50px;
+            background-color: var(--nucleo-color);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--shadow-color);
+            transition: all 0.5s ease;
+            position: absolute;
+            z-index: 10;
+        }
+
+        #ui-container {
+            height: 80px;
+            background: rgba(0, 0, 0, 0.8);
+            border-top: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+
+        #gameInput {
+            width: 80%;
+            max-width: 600px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--text-color);
+            color: var(--text-color);
+            font-size: 1.2rem;
+            padding: 5px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        #feedback {
+            font-size: 0.8rem;
+            height: 1.2rem;
+            margin-top: 5px;
+            opacity: 0.7;
+        }
+
+        /* Clases Atmosféricas */
+        .efecto-sangre #escenario { filter: sepia(100%) saturate(500%) hue-rotate(-50deg); }
+        .efecto-vacío #escenario { filter: brightness(0%) contrast(100%); }
+        .efecto-niebla #escenario { filter: blur(5px); }
+        .efecto-psicodelia #escenario { filter: hue-rotate(360deg) saturate(200%); animation: hueRave 2s infinite linear; }
+        .efecto-antiguo #escenario { filter: grayscale(100%) contrast(150%); animation: grain 0.1s infinite; }
+        .efecto-vertigo #escenario { animation: spin 3s infinite linear; }
+        .efecto-espejo #escenario { transform: scaleX(-1); }
+        .efecto-pesadilla #escenario { filter: invert(100%) hue-rotate(180deg); }
+        .efecto-sueño #escenario { filter: blur(2px) opacity(0.8); }
+        .efecto-asfixia #escenario { box-shadow: inset 0 0 150px 100px #000; }
+        .efecto-laberinto { background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 20px 20px; }
+
+        /* Clases Núcleo */
+        .nucleo-caos { animation: glitch 0.2s infinite; }
+        .nucleo-pulso { animation: pulse 1s infinite; }
+        .nucleo-float { animation: float 3s infinite ease-in-out; }
+        .nucleo-latido { animation: latido 0.8s infinite; }
+        .nucleo-gravedad { top: 90% !important; }
+        .nucleo-ascension { top: 10% !important; }
+
+        /* Clases Body */
+        .shake { animation: shake 0.3s; animation-iteration-count: 2; }
+        .desnudo { all: initial !important; background: white !important; color: black !important; font-family: serif !important; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
+        @keyframes latido { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.3); } 30% { transform: scale(1); } 45% { transform: scale(1.3); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
+        @keyframes glitch { 0% { transform: translate(0) skew(0deg); opacity: 1; } 20% { transform: translate(-5px, 2px) skew(5deg); opacity: 0.8; } 40% { transform: translate(5px, -2px) skew(-5deg); opacity: 0.9; } 60% { transform: translate(-2px, 0) skew(2deg); opacity: 1; } 100% { transform: translate(0) skew(0deg); } }
+        @keyframes hueRave { 0% { filter: hue-rotate(0deg) saturate(200%); } 100% { filter: hue-rotate(360deg) saturate(200%); } }
+        @keyframes grain { 0%, 100% { transform: translate(0, 0); } 10% { transform: translate(-1px, -1px); } 30% { transform: translate(1px, 1px); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .ojo-spawner { position: absolute; width: 10px; height: 10px; background: white; border-radius: 50%; box-shadow: 0 0 10px white, 0 0 5px red inset; animation: parpadeo 4s infinite; }
+        .gota-sangre, .gota-sudor { position: absolute; width: 4px; height: 15px; border-radius: 50%; top: -20px; animation: caidaGota 2s linear forwards; }
+        .gota-sangre { background: red; }
+        .gota-sudor { background: rgba(255,255,255,0.5); width: 6px; height: 10px; }
+        .aracnido { position: absolute; width: 6px; height: 6px; background: #111; border-radius: 50%; animation: scurry 2s linear infinite; }
+        .particula-fuego { position: absolute; width: 8px; height: 8px; background: orange; border-radius: 50%; bottom: -10px; animation: subirFuego 1.5s linear forwards; }
+
+        @keyframes parpadeo { 0%, 90%, 100% { transform: scaleY(1); opacity: 1; } 95% { transform: scaleY(0.1); opacity: 0.3; } }
+        @keyframes caidaGota { to { transform: translateY(110vh); } }
+        @keyframes scurry { 0% { transform: translate(0,0); } 25% { transform: translate(20px, 10px); } 50% { transform: translate(-10px, 30px); } 75% { transform: translate(15px, 5px); } 100% { transform: translate(0,0); } }
+        @keyframes subirFuego { to { transform: translateY(-50vh); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div id="escenario">
+        <div id="nucleo"></div>
+    </div>
+
+    <div id="ui-container">
+        <input type="text" id="gameInput" placeholder="Escribe aquí..." autofocus>
+        <div id="feedback"></div>
+    </div>
+
+    <script>
+        const input = document.getElementById('gameInput');
+        const feedback = document.getElementById('feedback');
+        const cuerpo = document.body;
+        const escenario = document.getElementById('escenario');
+
+        function limpiarEfectos() {
+            cuerpo.className = '';
+            escenario.innerHTML = '<div id="nucleo"></div>';
+            cuerpo.style = '';
+            const nuevoNucleo = document.getElementById('nucleo');
+            nuevoNucleo.style = '';
+            return nuevoNucleo;
+        }
+
+        function spawnElemento(claseCSS, cantidad = 1) {
+            for(let i=0; i<cantidad; i++) {
+                const el = document.createElement('div');
+                el.className = claseCSS;
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.top = Math.random() * 100 + 'vh';
+                el.style.animationDelay = Math.random() * 2 + 's';
+                escenario.appendChild(el);
+            }
+        }
+
+        function intervalSpawn(claseCSS, cant, timeout) {
+            let iv = setInterval(() => spawnElemento(claseCSS, cant), 100);
+            setTimeout(() => clearInterval(iv), timeout);
+        }
+
+        const atm = (bg, txt, nBg, nSh, msg, nClase = '', bodyClase = '') => {
+            const n = limpiarEfectos();
+            if(bg) cuerpo.style.setProperty('--bg-color', bg);
+            if(txt) cuerpo.style.setProperty('--text-color', txt);
+            if(nBg) n.style.backgroundColor = nBg;
+            if(nSh) n.style.boxShadow = nSh;
+            if(nClase) n.classList.add(nClase);
+            if(bodyClase) cuerpo.classList.add(bodyClase);
+            feedback.textContent = msg;
+            return n;
+        };
+
+        const diccionario = {
+            "sangre": () => { atm('#050505', '#f00', '#fff', '', 'Viscoso.', '', 'efecto-sangre'); intervalSpawn('gota-sangre', 2, 5000); },
+            "miedo": () => { atm(null, null, null, null, 'Te observa.', 'nucleo-caos', 'shake'); },
+            "ojos": () => { atm(null, null, null, null, 'No estás solo.'); spawnElemento('ojo-spawner', 20); },
+            "oscuridad": () => { atm('#000', '#333', '#111', 'none', 'La luz se desvanece.'); },
+            "grito": () => { const n = atm(null, null, null, null, 'SILENCIO.', '', 'shake'); n.style.transform = 'scale(5)'; n.style.opacity = '0'; setTimeout(() => { n.style.transform = 'scale(1)'; n.style.opacity = '1'; }, 1000); },
+            "antiguo": () => { atm(null, null, null, null, 'Transmisión interrumpida.', '', 'efecto-antiguo'); },
+            "flotar": () => { atm(null, null, null, null, 'Gravedad cero.', 'nucleo-float'); },
+            "pulso": () => { atm(null, null, null, null, 'Ritmo detectado.', 'nucleo-pulso'); },
+            "calor": () => { atm('#200', '#f80', '#fa0', '0 0 50px red', 'Temperatura en aumento.'); },
+            "frio": () => { atm('#e0f7fa', '#006064', '#fff', '0 0 30px #81d4fa', 'Congelamiento.', '', 'efecto-niebla'); },
+            "caos": () => { atm(null, null, null, null, 'Inestabilidad crítica.', 'nucleo-caos', 'shake'); },
+            "psicodelia": () => { atm(null, null, null, null, 'Viaje iniciado.', '', 'efecto-psicodelia'); },
+            "matrix": () => { atm('#000', '#0f0', '#0f0', '0 0 20px #0f0', 'Despierta.'); },
+            "grande": () => { const n = atm(null, null, null, null, 'Expansión.'); n.style.transform = 'scale(4)'; },
+            "pequeño": () => { const n = atm(null, null, null, null, 'Compresión.'); n.style.transform = 'scale(0.2)'; },
+            "reset": () => { atm('#050505', '#0f0', '#fff', '0 0 20px rgba(255,255,255,0.5)', 'Sistema reiniciado.'); },
+            "vacío": () => { atm(null, null, 'transparent', 'none', 'Nada.', '', 'efecto-vacío'); },
+            "ayuda": () => { feedback.textContent = "Busca en el interior."; },
+            
+            // Nuevas palabras
+            "deseo": () => { atm('#1a000d', '#ff66b2', '#ff1a75', '0 0 40px #ff66b2', 'Atracción.', 'nucleo-pulso'); },
+            "lujuria": () => { atm('#330000', '#ff0040', '#cc0000', '0 0 50px #ff0040', 'Instinto.', 'nucleo-latido', 'efecto-niebla'); },
+            "caricia": () => { atm('#0f0f1a', '#b3b3ff', '#e6e6ff', '0 0 30px #b3b3ff', 'Contacto suave.', 'nucleo-float'); },
+            "beso": () => { const n = atm('#1a001a', '#ff99ff', '#ff33cc', '0 0 60px #ff99ff', 'Conexión.'); n.style.borderRadius = '20px 50px 50px 20px'; },
+            "gemido": () => { atm(null, null, null, null, 'Sonido en la oscuridad.', 'nucleo-caos', 'shake'); },
+            "seduccion": () => { atm('#1a0033', '#cc99ff', '#9933ff', '0 0 40px #cc99ff', 'Aproximación.', '', 'efecto-sueño'); },
+            "pasion": () => { atm('#4d0000', '#ff3300', '#ff6600', '0 0 60px #ff0000', 'Ignición.', 'nucleo-pulso'); intervalSpawn('particula-fuego', 3, 2000); },
+            "veneno": () => { atm('#001a00', '#33ff33', '#00cc00', '0 0 30px #33ff33', 'Intoxicación.', 'nucleo-caos'); },
+            "aracnido": () => { atm(null, null, null, null, 'Plaga.'); spawnElemento('aracnido', 30); },
+            "abismo": () => { const n = atm('#000', '#222', '#000', '0 0 100px #000 inset', 'Caída libre.'); n.style.transform = 'scale(0)'; },
+            "eco": () => { const n = atm(null, null, null, null, 'Reverberación.'); n.style.boxShadow = '20px 0 0 #555, -20px 0 0 #555'; },
+            "sombra": () => { atm('#111', '#444', '#000', 'none', 'Ausencia.'); },
+            "fuego": () => { atm('#2a0800', '#ffaa00', '#ff5500', '0 0 50px #ff0000', 'Combustión.'); intervalSpawn('particula-fuego', 5, 4000); },
+            "agua": () => { atm('#001133', '#00aaff', '#0055ff', '0 0 40px #00aaff', 'Inmersión.', 'nucleo-float'); },
+            "viento": () => { const n = atm('#050505', '#aaa', '#fff', '0 0 20px #fff', 'Corriente.'); n.style.transform = 'translateX(50vw)'; },
+            "tierra": () => { atm('#1a1100', '#aa7700', '#553300', 'none', 'Densidad.', '', 'shake'); },
+            "dios": () => { atm('#fff', '#000', '#fff', '0 0 100px #fff', 'Presencia.'); cuerpo.style.filter = 'brightness(200%)'; },
+            "diablo": () => { atm('#300', '#f00', '#000', '0 0 50px #f00', 'Condenación.', 'nucleo-caos'); },
+            "dolor": () => { atm('#200', '#f00', '#f00', '0 0 10px #f00', 'Sufrimiento.', 'nucleo-caos', 'shake'); },
+            "placer": () => { atm('#1a0d16', '#ffb3e6', '#ffe6f2', '0 0 50px #ffb3e6', 'Éxtasis.', 'nucleo-float'); },
+            "asfixia": () => { atm(null, '#f00', null, null, 'Falta de oxígeno.', '', 'efecto-asfixia'); },
+            "latido": () => { atm(null, null, '#ff1a1a', '0 0 30px #ff1a1a', 'Vitalidad.', 'nucleo-latido'); },
+            "espejo": () => { atm(null, null, null, null, 'Reflejo.', '', 'efecto-espejo'); },
+            "cristal": () => { const n = atm(null, null, 'transparent', 'none', 'Fragilidad.'); n.style.border = '1px solid #fff'; n.style.borderRadius = '0'; },
+            "locura": () => { atm('#110', '#ff0', '#f0f', '0 0 50px #0ff', 'Pérdida de razón.', 'nucleo-caos', 'efecto-psicodelia'); },
+            "silencio": () => { const n = atm('#000', '#111', '#111', 'none', '...'); n.style.animation = 'none'; },
+            "luz": () => { atm('#eee', '#000', '#fff', '0 0 100px #fff', 'Iluminación.'); },
+            "fantasma": () => { const n = atm(null, null, 'rgba(255,255,255,0.2)', 'none', 'Aparición.', 'nucleo-float'); },
+            "zombie": () => { atm('#0a140a', '#33ff33', '#1a331a', '0 0 10px #33ff33', 'Putrefacción.'); },
+            "infierno": () => { atm('#400', '#f80', '#f00', '0 0 100px #f80', 'Fuego eterno.', 'nucleo-caos'); intervalSpawn('particula-fuego', 8, 5000); },
+            "cielo": () => { atm('#e6f7ff', '#0088cc', '#fff', '0 0 50px #fff', 'Ascensión.', 'nucleo-float'); },
+            "tentaculo": () => { const n = atm(null, null, '#330066', '0 0 20px #9900ff', 'Profundidades.'); n.style.height = '200px'; n.style.width = '20px'; n.classList.add('nucleo-caos'); },
+            "desnudo": () => { atm('#fff', '#000', '#000', 'none', 'Expuesto.', '', 'desnudo'); },
+            "piel": () => { atm('#ffe6cc', '#994d00', '#ffcc99', '0 0 20px #ffcc99', 'Superficie.', '', 'efecto-sueño'); },
+            "sudor": () => { atm(null, null, null, null, 'Exudación.'); intervalSpawn('gota-sudor', 3, 4000); },
+            "misterio": () => { atm('#05051a', '#aaa', '#223', '0 0 20px #557', 'Incógnita.', '', 'efecto-niebla'); },
+            "tumba": () => { const n = atm('#111', '#555', '#444', 'none', 'Descanso.'); n.style.borderRadius = '5px 5px 0 0'; n.style.width = '40px'; n.style.height = '60px'; },
+            "reloj": () => { const n = atm(null, null, null, null, 'Tiempo.', '', 'efecto-vertigo'); n.style.width = '2px'; n.style.height = '60px'; n.style.transformOrigin = 'bottom'; },
+            "magia": () => { atm('#1a0033', '#f0f', '#f0f', '0 0 50px #0ff', 'Conjuración.', 'nucleo-float'); },
+            "hipnosis": () => { atm(null, null, null, null, 'Trance.', '', 'efecto-vertigo'); escenario.style.background = 'repeating-radial-gradient(circle, #000 10px, #fff 20px)'; },
+            "vertigo": () => { atm(null, null, null, null, 'Mareo.', '', 'efecto-vertigo'); },
+            "gravedad": () => { atm(null, null, null, null, 'Atracción física.', 'nucleo-gravedad'); },
+            "ascension": () => { atm(null, null, null, null, 'Elevación.', 'nucleo-ascension'); },
+            "explosion": () => { const n = atm('#fff', '#000', '#f00', '0 0 100px #f00', 'Detonación.', '', 'shake'); n.style.transform = 'scale(20)'; setTimeout(() => n.style.opacity = '0', 200); },
+            "implosion": () => { const n = atm('#000', '#fff', '#fff', 'none', 'Colapso.'); n.style.transform = 'scale(0)'; },
+            "secreto": () => { atm(null, 'transparent', null, null, 'Oculto.', '', 'efecto-niebla'); feedback.style.textShadow = '0 0 5px #fff'; },
+            "pesadilla": () => { atm(null, null, null, null, 'Terror nocturno.', 'nucleo-caos', 'efecto-pesadilla'); },
+            "sueño": () => { atm('#001a33', '#80bfff', '#cce6ff', '0 0 40px #80bfff', 'Fantasía.', 'nucleo-float', 'efecto-sueño'); },
+            "demonio": () => { const n = atm('#200', '#f00', '#000', '0 0 50px #f00', 'Entidad.'); n.style.borderTop = '20px solid #f00'; n.classList.add('nucleo-caos'); },
+            "angel": () => { atm('#fff', '#ccaa00', '#fff', '0 0 100px #ffeb3b', 'Custodio.', 'nucleo-float'); },
+            "laberinto": () => { atm(null, null, null, null, 'Perdido.', '', 'efecto-laberinto'); }
+        };
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const accion = input.value.toLowerCase().trim();
+                if (diccionario[accion]) {
+                    diccionario[accion]();
+                } else {
+                    feedback.textContent = `"${accion}" no invoca nada aquí.`;
+                    input.style.borderBottomColor = 'red';
+                    setTimeout(() => input.style.borderBottomColor = 'var(--text-color)', 500);
+                }
+                input.value = '';
+            }
+        });
+    </script>
+</body>
+</html>
