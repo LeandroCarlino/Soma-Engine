@@ -2,82 +2,80 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Motor Canvas - Entidad Fotorrealista</title>
+    <title>SOMA ENGINE | v1.3</title>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: #050505; color: #0f0;
-            font-family: monospace; display: flex; flex-direction: column;
+            font-family: 'Courier New', monospace; display: flex; flex-direction: column;
             overflow: hidden; transition: background-color 0.5s;
         }
         #stage-container {
             flex: 1; display: flex; justify-content: center; align-items: center; z-index: 1;
+            position: relative;
         }
-        canvas {
-            image-rendering: pixelated; transition: filter 0.5s;
-        }
+        canvas { image-rendering: auto; transition: filter 0.5s, transform 0.5s; }
         #ui {
-            height: 60px; background: #000; border-top: 1px solid #333;
+            height: 100px; background: #000; border-top: 1px solid #333;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 10;
         }
         input {
-            width: 80%; max-width: 600px; background: transparent; border: none; 
-            border-bottom: 2px solid #0f0; color: #0f0; font-size: 1.2rem; 
-            text-align: center; outline: none; text-transform: lowercase;
+            width: 80%; max-width: 700px; background: transparent; border: none; 
+            border-bottom: 2px solid #0f0; color: #0f0; font-size: 1.8rem; 
+            text-align: center; outline: none; text-transform: lowercase; padding: 10px;
         }
-        #log { font-size: 0.8rem; margin-top: 5px; opacity: 0.7; }
+        #log { font-size: 1.1rem; margin-top: 8px; opacity: 0.8; letter-spacing: 1px; }
         
-        /* Modales y Menú */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 100; display: flex;
+            background: rgba(0,0,0,0.95); z-index: 100; display: flex;
             justify-content: center; align-items: center; flex-direction: column;
             padding: 20px; box-sizing: border-box; text-align: center;
         }
         .hidden { display: none !important; }
         .modal-box {
-            background: #111; border: 1px solid #333; padding: 20px; max-width: 500px;
+            background: #0a0a0a; border: 1px solid #0f0; padding: 40px; max-width: 650px;
         }
-        .modal-box p { margin: 0 0 15px 0; line-height: 1.4; color: #aaa; }
-        .modal-box a { color: #0f0; text-decoration: none; border-bottom: 1px solid #0f0; }
+        .modal-box p { margin: 0 0 18px 0; line-height: 1.6; color: #ccc; font-size: 1.1rem; }
         button {
             background: transparent; border: 1px solid #0f0; color: #0f0;
-            padding: 10px 20px; font-family: monospace; cursor: pointer; font-size: 1rem;
+            padding: 15px 30px; font-family: monospace; cursor: pointer; font-size: 1.1rem;
+            margin: 10px; transition: 0.3s;
         }
         button:hover { background: #0f0; color: #000; }
         
         #menu-btn {
-            position: fixed; top: 15px; right: 15px; background: transparent;
-            border: none; color: #333; font-size: 24px; cursor: pointer; z-index: 50;
-            transition: color 0.3s;
+            position: fixed; top: 20px; right: 20px; background: transparent;
+            border: none; color: #1a1a1a; font-size: 32px; cursor: pointer; z-index: 50;
         }
         #menu-btn:hover { color: #0f0; }
         #word-list-container {
-            margin-top: 15px; font-size: 0.8rem; color: #555; text-align: left;
-            max-height: 200px; overflow-y: auto; word-wrap: break-word;
+            margin-top: 15px; font-size: 0.9rem; color: #0f0; text-align: left;
+            max-height: 200px; overflow-y: auto; padding: 15px; background: #000;
+            border: 1px solid #222; line-height: 1.8;
         }
 
-        /* Efecto NSFW Easter Egg */
-        #nsfw-bg {
+        #nsfw-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.5s;
-            background-color: #1a0000;
-            display: flex; flex-wrap: wrap; align-content: flex-start; overflow: hidden;
         }
-        #nsfw-bg.active { opacity: 1; }
-        .nsfw-text {
-            color: rgba(255,0,0,0.1); font-size: 3rem; font-weight: bold;
-            text-transform: uppercase; white-space: nowrap; padding: 10px;
-            animation: scrollNSFW 10s linear infinite;
+        #nsfw-layer.active { opacity: 1; z-index: 90; }
+        .nsfw-stamp {
+            position: absolute; color: rgba(255,0,0,0.3); font-weight: bold;
+            text-transform: uppercase; font-family: sans-serif;
         }
-        @keyframes scrollNSFW { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     </style>
 </head>
 <body>
     <div id="warning-modal" class="overlay">
         <div class="modal-box">
-            <p style="color: #f00; font-weight: bold;">ADVERTENCIA DE SEGURIDAD</p>
+            <p style="color: #f00; font-weight: bold; font-size: 1.5rem; letter-spacing: 3px;">SOMA ENGINE</p>
+            <p>SOMA ENGINE v1.3: Entorno de manipulación somática y ambiental.</p>
+            <p><b>Mecánica:</b> Escribe palabras para alterar al sujeto o a su entorno. Los efectos decaen tras 10s.</p>
+            <p><b>Controles:</b> Usa <b>"reset"</b> para purgar los estados.
+
+                <p style="color: #f00; font-weight: bold;">ADVERTENCIA DE SEGURIDAD</p>
             <p>Este experimento contiene efectos visuales intermitentes, alteraciones de color rápidas y sonidos de frecuencias anómalas.</p>
             <p>Puede causar molestias o desencadenar episodios en personas con epilepsia fotosensible o sensibilidad auditiva.</p>
             <button id="btn-accept-warning">ACEPTAR Y CONTINUAR</button>
@@ -87,44 +85,35 @@
     <button id="menu-btn">☰</button>
     <div id="menu-modal" class="overlay hidden">
         <div class="modal-box">
-            <p>Proyecto de experimentación desarrollado por Leandro Carlino como práctica técnica con Gemini 3.1.</p>
-            <p><a href="https://www.linkedin.com/in/leandro-carlino/" target="_blank">Perfil en LinkedIn</a></p>
-            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-            <button id="btn-show-words">VER DICCIONARIO</button>
+            <p><b>SOMA ENGINE v1.3</b></p>
+            <p>Arquitectura de control semántico y renderizado fotorrealista.</p>
+            <p>Desarrollado por <a href="https://www.linkedin.com/in/leandro-carlino/" target="_blank" style="color:#0f0">Leandro Carlino</a>.</p>
+            <hr style="border: 0; border-top: 1px solid #222; margin: 20px 0;">
+            <button id="btn-show-words">EXTRAER DICCIONARIO</button>
             <div id="word-list-container" class="hidden"></div>
             <br><br>
-            <button id="btn-close-menu">CERRAR</button>
+            <button id="btn-close-menu">RETORNAR</button>
         </div>
     </div>
 
-    <div id="nsfw-bg">
-        </div>
+    <div id="nsfw-layer"></div>
 
     <div id="stage-container">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
     </div>
+    
     <div id="ui">
         <input type="text" id="cmd" autocomplete="off" disabled>
-        <div id="log">Sistema bloqueado. Acepte la advertencia.</div>
+        <div id="log">Inicializando matriz de control...</div>
     </div>
 
     <script>
-        // Setup NSFW Background
-        const nsfwBg = document.getElementById('nsfw-bg');
-        let nsfwContent = '';
-        for(let i=0; i<50; i++) nsfwContent += '<span class="nsfw-text">NSFW EXPLICIT CONTENT WARNING </span>';
-        nsfwBg.innerHTML = nsfwContent;
-
-        // UI Elements
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const input = document.getElementById('cmd');
         const log = document.getElementById('log');
-        const warningModal = document.getElementById('warning-modal');
-        const menuModal = document.getElementById('menu-modal');
-        const wordListContainer = document.getElementById('word-list-container');
-        
-        // Audio Motor
+        const nsfwLayer = document.getElementById('nsfw-layer');
+
         const Sfx = {
             ctx: null,
             init: function() {
@@ -155,217 +144,322 @@
 
         let state = {
             overlay: 'none', filter: 'none', anim: 'none',
-            scale: 1, rotation: 0, bgColor: '#050505',
-            particles: 'none', alpha: 1
+            scale: 1.3, rotation: 0, bgColor: '#050505',
+            particles: 'none', alpha: 1, clones: 0,
+            offsetX: 0, offsetY: 0, shadowColor: 'transparent',
+            envParticles: 'none', interactive: false, ripples: [], transform: 'none'
         };
 
         const baseImg = new Image();
         baseImg.src = 'imagen.png';
         let frame = 0;
-        let clockInterval = null;
+        let activeTimers = {};
+        let nsfwInterval = null;
+
+        canvas.addEventListener('click', (e) => {
+            if(!state.interactive) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            state.ripples.push({
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY,
+                radius: 0, alpha: 1
+            });
+            Sfx.play(800, 'sine', 0.2, 0.1, 200);
+        });
 
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             document.body.style.backgroundColor = state.bgColor;
             canvas.style.filter = state.filter;
+            canvas.style.transform = state.transform;
 
             if (!baseImg.complete) { requestAnimationFrame(render); return; }
 
             const aspect = baseImg.width / baseImg.height;
-            let h = 450 * state.scale;
+            let h = 500 * state.scale;
             let w = h * aspect;
-            let offsetX = 0;
-            let offsetY = 0;
+            let ox = state.offsetX, oy = state.offsetY;
 
-            if (state.anim === 'flotar') offsetY = Math.sin(frame * 0.05) * 20;
-            if (state.anim === 'latido') { const s = 1 + Math.sin(frame * 0.15) * 0.05; w *= s; h *= s; }
-            if (state.anim === 'caos') { offsetX = (Math.random()-0.5)*10; offsetY = (Math.random()-0.5)*10; }
-            if (state.anim === 'terremoto') { offsetX = (Math.random()-0.5)*30; offsetY = (Math.random()-0.5)*30; }
-            if (state.anim === 'glitch') { if(Math.random()>0.8) { offsetX = (Math.random()-0.5)*50; canvas.style.filter = `hue-rotate(${Math.random()*360}deg)`; } else { canvas.style.filter = state.filter; } }
+            if (state.anim === 'flotar') oy += Math.sin(frame * 0.05) * 25;
+            if (state.anim === 'latido') { const s = 1 + Math.sin(frame * 0.15) * 0.08; w *= s; h *= s; }
+            if (state.anim === 'caos') { ox += (Math.random()-0.5)*15; oy += (Math.random()-0.5)*15; }
+            if (state.anim === 'terremoto') { ox += (Math.random()-0.5)*45; oy += (Math.random()-0.5)*45; }
+            if (state.anim === 'glitch' && Math.random()>0.85) { ox += (Math.random()-0.5)*80; }
+            if (state.anim === 'drift') { ox += Math.sin(frame*0.5)*10; canvas.style.filter = 'drop-shadow(-20px 0px 5px rgba(255,255,255,0.4)) blur(1px)'; }
+            if (state.anim === 'reloj') { state.rotation += 0.05; }
+            if (state.anim === 'tornado') { state.rotation += 0.3; state.scale = 1 + Math.sin(frame*0.1)*0.5; }
 
-            const x = (canvas.width - w) / 2 + offsetX;
-            const y = (canvas.height - h) / 2 + offsetY;
+            const drawEnvironment = () => {
+                if(state.envParticles === 'lluvia') {
+                    ctx.fillStyle = 'rgba(150, 200, 255, 0.6)';
+                    for(let i=0; i<100; i++) ctx.fillRect(Math.random()*canvas.width, (frame*25 + i*30)%canvas.height, 2, 20);
+                } else if(state.envParticles === 'nieve') {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    for(let i=0; i<80; i++) {
+                        ctx.beginPath();
+                        ctx.arc((i*40 + Math.sin(frame*0.02 + i)*30)%canvas.width, (frame*3 + i*50)%canvas.height, Math.random()*3+1, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                } else if(state.envParticles === 'datos') {
+                    ctx.fillStyle = '#0f0'; ctx.font = '14px monospace';
+                    for(let i=0; i<50; i++) ctx.fillText(Math.random()>0.5?'1':'0', (i*30)%canvas.width, (frame*10 + i*40)%canvas.height);
+                }
+                
+                if(state.interactive && state.ripples.length > 0) {
+                    for(let i=state.ripples.length-1; i>=0; i--) {
+                        let r = state.ripples[i];
+                        ctx.strokeStyle = `rgba(0, 255, 0, ${r.alpha})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.arc(r.x, r.y, r.radius, 0, Math.PI*2); ctx.stroke();
+                        r.radius += 10; r.alpha -= 0.02;
+                        if(r.alpha <= 0) state.ripples.splice(i, 1);
+                    }
+                }
+            };
 
-            ctx.save();
-            ctx.translate(canvas.width/2, canvas.height/2);
-            ctx.rotate(state.rotation);
-            ctx.translate(-canvas.width/2, -canvas.height/2);
+            const drawSubject = (drawX, drawY, drawW, drawH) => {
+                ctx.save();
+                ctx.translate(canvas.width/2 + ox, canvas.height/2 + oy);
+                ctx.rotate(state.rotation);
+                ctx.translate(-(canvas.width/2 + ox), -(canvas.height/2 + oy));
+
+                if(state.shadowColor !== 'transparent') {
+                    ctx.shadowBlur = 30;
+                    ctx.shadowColor = state.shadowColor;
+                }
+
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = state.alpha;
+                ctx.drawImage(baseImg, drawX, drawY, drawW, drawH);
+
+                ctx.shadowBlur = 0;
+                ctx.globalCompositeOperation = 'source-atop';
+                if (state.overlay !== 'none') { ctx.fillStyle = state.overlay; ctx.fillRect(drawX, drawY, drawW, drawH); }
+
+                if (state.particles === 'sangre') {
+                    ctx.fillStyle = '#700';
+                    for(let i=0; i<30; i++) ctx.fillRect(drawX + Math.abs(Math.sin(i*13))*drawW, drawY + (frame*4 + i*25)%drawH, 3, 8);
+                } else if (state.particles === 'fuego') {
+                    for(let i=0; i<40; i++) {
+                        ctx.fillStyle = `rgba(255, ${Math.random()*150}, 0, 0.8)`;
+                        ctx.beginPath(); ctx.arc(drawX + Math.random()*drawW, drawY + drawH - (frame*5 + i*18)%drawH, Math.random()*10, 0, Math.PI*2); ctx.fill();
+                    }
+                } else if (state.particles === 'estatica') {
+                    for(let i=0; i<150; i++) { ctx.fillStyle = Math.random()>0.5?'#fff':'#000'; ctx.fillRect(drawX+Math.random()*drawW, drawY+Math.random()*drawH, 2, 2); }
+                } else if (state.particles === 'neon') {
+                    ctx.strokeStyle = `hsl(${frame*5%360}, 100%, 50%)`; ctx.lineWidth = 4;
+                    ctx.strokeRect(drawX+5, drawY+5, drawW-10, drawH-10);
+                } else if (state.particles === 'burbujas') {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                    for(let i=0; i<15; i++) { ctx.beginPath(); ctx.arc(drawX + Math.abs(Math.cos(i*7))*drawW, drawY + drawH - (frame*2 + i*30)%drawH, 5, 0, Math.PI*2); ctx.stroke(); }
+                } else if (state.particles === 'cristales') {
+                    ctx.fillStyle = 'rgba(0, 200, 255, 0.8)';
+                    for(let i=0; i<20; i++) { ctx.fillRect(drawX + Math.random()*drawW, drawY + (frame*2 + i*40)%drawH, 4, 4); }
+                } else if (state.particles === 'humo') {
+                    ctx.fillStyle = 'rgba(100, 100, 100, 0.2)';
+                    for(let i=0; i<15; i++) { ctx.beginPath(); ctx.arc(drawX + Math.random()*drawW, drawY + drawH - (frame*3 + i*20)%drawH, Math.random()*20+10, 0, Math.PI*2); ctx.fill(); }
+                } else if (state.particles === 'rayos') {
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                    if(Math.random()>0.7) {
+                        ctx.beginPath(); ctx.moveTo(drawX + Math.random()*drawW, drawY);
+                        ctx.lineTo(drawX + Math.random()*drawW, drawY + drawH/2);
+                        ctx.lineTo(drawX + Math.random()*drawW, drawY + drawH); ctx.stroke();
+                    }
+                }
+
+                ctx.restore();
+            };
 
             ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = state.alpha;
-            ctx.drawImage(baseImg, x, y, w, h);
+            drawEnvironment();
 
-            ctx.globalCompositeOperation = 'source-atop';
+            const mainX = (canvas.width - w) / 2;
+            const mainY = (canvas.height - h) / 2;
 
-            if (state.overlay !== 'none') {
-                ctx.fillStyle = state.overlay;
-                ctx.fillRect(x, y, w, h);
+            if(state.clones > 0) {
+                for(let i=0; i<state.clones; i++) {
+                    const sep = 200 * (i+1);
+                    drawSubject(mainX - sep, mainY, w * 0.8, h * 0.8);
+                    drawSubject(mainX + sep, mainY, w * 0.8, h * 0.8);
+                }
             }
+            drawSubject(mainX, mainY, w, h);
 
-            if (state.particles === 'sangre') {
-                ctx.fillStyle = '#600';
-                for(let i=0; i<30; i++) {
-                    ctx.beginPath();
-                    ctx.arc(x + Math.abs(Math.sin(i*13))*w, y + (frame*3 + i*20)%h, 3 + Math.sin(i)*2, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            } else if (state.particles === 'fuego') {
-                for(let i=0; i<40; i++) {
-                    ctx.fillStyle = `rgba(255, ${Math.random()*150}, 0, 0.7)`;
-                    ctx.beginPath();
-                    ctx.arc(x + Math.random()*w, y + h - (frame*4 + i*15)%h, Math.random()*8, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            } else if (state.particles === 'sudor') {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                for(let i=0; i<20; i++) {
-                    ctx.beginPath();
-                    ctx.arc(x + Math.abs(Math.sin(i*7))*w, y + (frame + i*30)%h, 2, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            } else if (state.particles === 'burbujas') {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                for(let i=0; i<20; i++) {
-                    ctx.beginPath();
-                    ctx.arc(x + Math.abs(Math.cos(i*11))*w, y + h - (frame*2 + i*25)%h, 4 + Math.sin(i)*3, 0, Math.PI*2);
-                    ctx.stroke();
-                }
-            } else if (state.particles === 'estatica') {
-                for(let i=0; i<200; i++) {
-                    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)';
-                    ctx.fillRect(x + Math.random()*w, y + Math.random()*h, 2, 2);
-                }
-            } else if (state.particles === 'neon') {
-                ctx.strokeStyle = `hsl(${frame*2%360}, 100%, 50%)`;
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x+10, y+10, w-20, h-20);
-            }
-
-            ctx.restore();
             frame++;
             requestAnimationFrame(render);
         }
 
-        baseImg.onload = () => requestAnimationFrame(render);
-
-        const resetState = () => {
-            if (clockInterval) clearInterval(clockInterval);
-            clockInterval = null;
-            nsfwBg.classList.remove('active');
-            canvas.style.transform = 'none';
-            state = { overlay: 'none', filter: 'none', anim: 'none', scale: 1, rotation: 0, bgColor: '#050505', particles: 'none', alpha: 1 };
+        const cmd = (msg, mod, dur = 5000) => {
+            log.innerText = msg;
+            for (const key in mod) {
+                if (activeTimers[key]) clearTimeout(activeTimers[key]);
+                state[key] = mod[key];
+                if (dur > 0) {
+                    activeTimers[key] = setTimeout(() => {
+                        const defaults = { 
+                            overlay: 'none', filter: 'none', anim: 'none', scale: 1.3, 
+                            rotation: 0, bgColor: '#050505', particles: 'none', alpha: 1, 
+                            clones: 0, offsetX: 0, offsetY: 0, shadowColor: 'transparent', 
+                            envParticles: 'none', transform: 'none' 
+                        };
+                        state[key] = defaults[key] !== undefined ? defaults[key] : state[key];
+                        delete activeTimers[key];
+                    }, dur);
+                }
+            }
         };
 
-        const cmd = (msg, mod) => {
-            Object.assign(state, mod);
-            log.innerText = msg;
+        const spawnNSFW = () => {
+            const stamp = document.createElement('div');
+            stamp.className = 'nsfw-stamp';
+            stamp.innerText = Math.random() > 0.5 ? 'NSFW CONTENT' : 'CENSORED';
+            stamp.style.left = Math.random() * 85 + '%';
+            stamp.style.top = Math.random() * 85 + '%';
+            stamp.style.fontSize = (Math.random() * 2.5 + 1) + 'rem';
+            stamp.style.transform = `rotate(${(Math.random()-0.5)*90}deg)`;
+            nsfwLayer.appendChild(stamp);
+            if(nsfwLayer.children.length > 25) nsfwLayer.removeChild(nsfwLayer.firstChild);
+        };
+
+        const triggerNSFW = () => {
+            nsfwLayer.classList.add('active');
+            if(!nsfwInterval) nsfwInterval = setInterval(spawnNSFW, 300);
+            log.innerText = "Acceso denegado.";
+            Sfx.play(150, 'square', 0.5, 0.2);
+            setTimeout(() => {
+                nsfwLayer.classList.remove('active');
+                clearInterval(nsfwInterval); nsfwInterval = null; nsfwLayer.innerHTML = '';
+            }, 5000);
+        };
+
+        const resetState = () => {
+            Object.values(activeTimers).forEach(clearTimeout); activeTimers = {};
+            if (nsfwInterval) { clearInterval(nsfwInterval); nsfwInterval = null; }
+            nsfwLayer.classList.remove('active'); nsfwLayer.innerHTML = '';
+            state = { overlay: 'none', filter: 'none', anim: 'none', scale: 1.3, rotation: 0, bgColor: '#050505', particles: 'none', alpha: 1, clones: 0, offsetX: 0, offsetY: 0, shadowColor: 'transparent', envParticles: 'none', interactive: state.interactive, ripples: [], transform: 'none' };
         };
 
         const cmds = {
-            "normal": () => { resetState(); log.innerText = "Estado base."; },
-            "reset": () => { resetState(); log.innerText = "Reinicio de variables."; Sfx.play(440, 'sine', 0.5, 0.1); },
-            
-            "sangre": () => { cmd("Hemorragia.", {overlay: 'rgba(100,0,0,0.5)', particles: 'sangre'}); Sfx.noise(1, 0.2); },
-            "veneno": () => { cmd("Toxicidad.", {overlay: 'rgba(0,150,0,0.4)', filter: 'hue-rotate(90deg)'}); Sfx.play(150, 'sawtooth', 2, 0.1); },
-            "fuego": () => { cmd("Combustión.", {overlay: 'rgba(200,50,0,0.3)', particles: 'fuego', anim: 'caos'}); Sfx.noise(3, 0.3); },
-            "hielo": () => { cmd("Congelamiento.", {overlay: 'rgba(150,200,255,0.5)', filter: 'brightness(150%) blur(1px)'}); Sfx.play(1200, 'sine', 2, 0.1); },
-            "agua": () => { cmd("Inmersión.", {overlay: 'rgba(0,50,150,0.4)', particles: 'burbujas', anim: 'flotar'}); Sfx.noise(2, 0.1); },
-            "piedra": () => { cmd("Petrificación.", {overlay: 'rgba(100,100,100,0.8)', filter: 'grayscale(100%)'}); Sfx.play(80, 'square', 1, 0.3); },
-            "oro": () => { cmd("Transmutación.", {overlay: 'rgba(255,215,0,0.4)', filter: 'contrast(150%) brightness(120%) drop-shadow(0 0 20px gold)'}); Sfx.play(800, 'sine', 1, 0.1); },
-            "sombra": () => { cmd("Ausencia fotónica.", {overlay: 'rgba(0,0,0,0.8)', filter: 'contrast(200%)'}); Sfx.noise(2, 0.05); },
-            "ceniza": () => { cmd("Desintegración.", {overlay: 'rgba(50,50,50,0.6)', filter: 'grayscale(100%) blur(2px)'}); Sfx.noise(2, 0.2); },
-            
-            "grande": () => { cmd("Expansión masiva.", {scale: 1.8}); Sfx.play(100, 'sine', 1, 0.2); },
-            "pequeño": () => { cmd("Compresión masiva.", {scale: 0.4}); Sfx.play(800, 'sine', 1, 0.1); },
-            "flotar": () => { cmd("Gravedad cero.", {anim: 'flotar'}); Sfx.play(400, 'sine', 2, 0.1); },
-            "gravedad": () => { cmd("Fuerza G extrema.", {scale: 1, anim: 'none'}); state.offsetY = 150; Sfx.play(50, 'sawtooth', 1, 0.3); },
-            "espejo": () => { cmd("Inversión X.", {filter: 'invert(0%)', rotation: 0}); canvas.style.transform = 'scaleX(-1)'; },
-            "invisible": () => { cmd("Camuflaje óptico.", {alpha: 0.05}); Sfx.noise(1, 0.1); },
-            "fantasma": () => { cmd("Densidad espectral.", {alpha: 0.4, anim: 'flotar', filter: 'grayscale(100%) blur(1px)'}); Sfx.play(600, 'sine', 3, 0.05); },
-            "rotar": () => { cmd("Alteración de eje.", {rotation: Math.PI}); },
-
-            "caos": () => { cmd("Inestabilidad cuántica.", {anim: 'caos', filter: 'hue-rotate(180deg) saturate(300%)'}); Sfx.play(150, 'square', 1, 0.2); },
-            "miedo": () => { cmd("Respuesta simpática.", {anim: 'caos', filter: 'grayscale(80%) contrast(150%)', bgColor: '#000'}); Sfx.play(900, 'sawtooth', 0.5, 0.1); },
-            "psicodelia": () => { cmd("Alteración de percepción.", {filter: 'hue-rotate(270deg) saturate(500%) contrast(200%)'}); Sfx.play(400, 'sine', 2, 0.1, 800); },
-            "locura": () => { cmd("Fallo cognitivo.", {anim: 'terremoto', filter: 'invert(100%)'}); Sfx.play(200, 'sawtooth', 2, 0.2, 100); },
-            "sueño": () => { cmd("Fase REM.", {anim: 'flotar', filter: 'blur(3px) brightness(120%)'}); Sfx.play(300, 'sine', 4, 0.05); },
-            "pesadilla": () => { cmd("Terror subconsciente.", {overlay: 'rgba(0,0,0,0.5)', filter: 'invert(100%) contrast(200%)', bgColor: '#200'}); Sfx.play(80, 'sawtooth', 3, 0.4); },
-            "vacio": () => { cmd("Nulidad.", {alpha: 0, bgColor: '#000'}); Sfx.play(40, 'sine', 3, 0.5); },
-            "matrix": () => { cmd("Simulación revelada.", {overlay: 'rgba(0,255,0,0.3)', filter: 'contrast(300%) grayscale(100%) sepia(100%) hue-rotate(70deg)'}); Sfx.play(800, 'square', 0.1, 0.1); },
-
-            "deseo": () => { cmd("Atracción bioquímica.", {overlay: 'rgba(255,0,100,0.2)', anim: 'latido'}); Sfx.play(300, 'sine', 1, 0.1); },
-            "lujuria": () => { cmd("Instinto primario.", {overlay: 'rgba(200,0,0,0.3)', filter: 'contrast(120%) blur(1px)', anim: 'latido', bgColor: '#100'}); Sfx.play(200, 'triangle', 1, 0.1); },
-            "caricia": () => { cmd("Estimulación táctil.", {overlay: 'rgba(255,255,255,0.2)', filter: 'brightness(110%)'}); Sfx.noise(1, 0.05); },
-            "beso": () => { cmd("Contacto mucoso.", {overlay: 'rgba(255,100,200,0.3)', scale: 1.1}); Sfx.play(500, 'sine', 0.3, 0.1); },
-            "pasion": () => { cmd("Termogénesis.", {overlay: 'rgba(255,50,0,0.3)', particles: 'sudor', anim: 'latido'}); Sfx.noise(2, 0.1); },
-            "placer": () => { cmd("Endorfinas.", {filter: 'brightness(130%) contrast(90%)', anim: 'flotar'}); Sfx.play(400, 'sine', 1, 0.1); },
-            "asfixia": () => { cmd("Hipoxia.", {overlay: 'rgba(0,0,50,0.5)', filter: 'grayscale(50%)', anim: 'caos'}); Sfx.noise(2, 0.1); },
-            "sudor": () => { cmd("Exudación.", {particles: 'sudor'}); },
-            "latido": () => { cmd("Contracción miocárdica.", {anim: 'latido'}); Sfx.play(50, 'sine', 0.2, 0.5); setTimeout(()=>Sfx.play(50, 'sine', 0.2, 0.5), 300); },
-
-            "grito": () => { cmd("Emisión acústica extrema.", {anim: 'terremoto', scale: 1.2, filter: 'contrast(300%)'}); Sfx.play(2000, 'sawtooth', 0.8, 0.3, 100); },
-            "oscuridad": () => { cmd("Ausencia de fotones.", {filter: 'brightness(10%)', bgColor: '#000'}); },
-            "luz": () => { cmd("Saturación fotónica.", {filter: 'brightness(500%)', bgColor: '#fff'}); Sfx.play(1000, 'sine', 1, 0.1); },
-            "antiguo": () => { cmd("Deterioro temporal.", {filter: 'sepia(100%) contrast(150%) blur(1px)'}); },
-            "reloj": () => { 
-                if(clockInterval) clearInterval(clockInterval);
-                cmd("Percepción temporal.", {rotation: Math.PI/4}); 
-                clockInterval = setInterval(() => state.rotation += 0.1, 1000); 
-                Sfx.play(800, 'sine', 0.05, 0.1); 
-            },
-            "terremoto": () => { cmd("Actividad sísmica.", {anim: 'terremoto'}); Sfx.noise(2, 0.5); },
-            "abismo": () => { cmd("Descenso infinito.", {scale: 0.1, bgColor: '#000'}); Sfx.play(200, 'sine', 2, 0.2, 20); },
-            "diablo": () => { cmd("Entidad hostil.", {overlay: 'rgba(255,0,0,0.5)', filter: 'contrast(200%)', particles: 'fuego'}); Sfx.play(100, 'sawtooth', 2, 0.2); },
-            "dios": () => { cmd("Entidad suprema.", {filter: 'brightness(300%) drop-shadow(0 0 50px white)', anim: 'flotar'}); Sfx.play(1200, 'sine', 3, 0.1); },
-
-            // Easter Eggs
-            "desnudo": () => { resetState(); nsfwBg.classList.add('active'); log.innerText = "Contenido censurado."; Sfx.play(150, 'square', 0.5, 0.2); },
-            "sexo": () => { resetState(); nsfwBg.classList.add('active'); log.innerText = "Contenido censurado."; Sfx.play(150, 'square', 0.5, 0.2); },
-            
-            // Nuevas Palabras
-            "alien": () => { cmd("Anomalía biológica.", {overlay: 'rgba(0,255,100,0.3)', filter: 'hue-rotate(120deg) contrast(150%)', anim: 'flotar'}); Sfx.play(2000, 'sine', 2, 0.1, 100); },
-            "robot": () => { cmd("Conversión cibernética.", {filter: 'grayscale(100%) contrast(200%)', overlay: 'rgba(100,100,100,0.5)'}); Sfx.noise(0.5, 0.1); },
-            "zombie": () => { cmd("Necrosis tisular.", {filter: 'sepia(80%) hue-rotate(50deg)', overlay: 'rgba(50,100,0,0.3)', particles: 'sangre'}); Sfx.play(80, 'sawtooth', 2, 0.2); },
-            "estatica": () => { cmd("Interferencia de señal.", {particles: 'estatica', filter: 'grayscale(100%)'}); Sfx.noise(2, 0.5); },
-            "glitch": () => { cmd("Error de renderizado.", {anim: 'glitch'}); Sfx.noise(0.2, 0.8); },
-            "neon": () => { cmd("Emisión luminiscente.", {particles: 'neon', filter: 'contrast(200%) saturate(300%)', bgColor: '#000'}); Sfx.play(400, 'square', 1, 0.1); },
-            "termico": () => { cmd("Espectro infrarrojo.", {filter: 'invert(100%) hue-rotate(180deg) saturate(400%)'}); Sfx.play(600, 'sine', 1, 0.1); },
-            "rayosx": () => { cmd("Radiación penetrante.", {filter: 'invert(100%) grayscale(100%) contrast(300%)', overlay: 'rgba(0,255,255,0.2)'}); Sfx.play(1500, 'sine', 0.2, 0.1); },
-            "supernova": () => { cmd("Colapso estelar.", {scale: 3, filter: 'brightness(500%) contrast(200%)', particles: 'fuego', bgColor: '#fff'}); Sfx.noise(3, 0.8); },
-            "agujeronegro": () => { cmd("Singularidad.", {scale: 0, filter: 'invert(100%)', bgColor: '#000'}); Sfx.play(20, 'sine', 3, 0.5); }
+            "normal": () => { resetState(); log.innerText = "SOMA: Reestablecido."; },
+            "reset": () => { resetState(); log.innerText = "SOMA: Purga completa."; Sfx.play(440, 'sine', 0.5, 0.1); },
+            "interactivo": () => { state.interactive = !state.interactive; log.innerText = `Sensores táctiles: ${state.interactive ? 'ON' : 'OFF'}`; },
+            "sangre": () => { cmd("Hemorragia.", {overlay: 'rgba(120,0,0,0.5)', particles: 'sangre'}); Sfx.noise(1,0.2); },
+            "veneno": () => { cmd("Toxicidad.", {filter: 'hue-rotate(110deg) saturate(250%)', overlay: 'rgba(0,100,0,0.3)'}); },
+            "fuego": () => { cmd("Combustión.", {overlay: 'rgba(255,80,0,0.4)', particles: 'fuego', anim: 'caos'}); Sfx.noise(2,0.3); },
+            "hielo": () => { cmd("Criogenia.", {overlay: 'rgba(180,230,255,0.6)', filter: 'brightness(1.6) blur(1px)'}); },
+            "agua": () => { cmd("Inmersión.", {overlay: 'rgba(0,50,150,0.4)', particles: 'burbujas', anim: 'flotar'}); },
+            "piedra": () => { cmd("Petrificación.", {overlay: 'rgba(100,100,100,0.8)', filter: 'grayscale(100%) contrast(1.2)'}); },
+            "oro": () => { cmd("Transmutación.", {overlay: 'rgba(255,215,0,0.4)', filter: 'contrast(1.5) brightness(1.2)'}); },
+            "sombra": () => { cmd("Ausencia fotónica.", {overlay: 'rgba(0,0,0,0.85)', filter: 'contrast(250%)'}); },
+            "ceniza": () => { cmd("Desintegración.", {overlay: 'rgba(60,60,60,0.7)', filter: 'grayscale(100%) blur(2px)'}); },
+            "grande": () => { cmd("Expansión tisular.", {scale: 2.4}); },
+            "pequeño": () => { cmd("Compresión tisular.", {scale: 0.5}); },
+            "flotar": () => { cmd("Levitación.", {anim: 'flotar'}); },
+            "gravedad": () => { cmd("Fuerza G.", {anim: 'terremoto', scale: 1, offsetY: 200}); },
+            "espejo": () => { cmd("Reflejo.", {transform: 'scaleX(-1)'}); },
+            "invisible": () => { cmd("Camuflaje óptico.", {alpha: 0.05}); },
+            "fantasma": () => { cmd("Espectro.", {alpha: 0.3, anim: 'flotar', filter: 'grayscale(100%)'}); },
+            "rotar": () => { cmd("Inversión de eje.", {rotation: Math.PI}); },
+            "caos": () => { cmd("Inestabilidad.", {anim: 'caos', filter: 'hue-rotate(180deg) saturate(300%)'}); },
+            "miedo": () => { cmd("Pánico.", {bgColor: '#000', anim: 'caos', filter: 'grayscale(100%) contrast(2)'}); },
+            "psicodelia": () => { cmd("Expansión.", {filter: 'hue-rotate(270deg) saturate(500%) contrast(2)'}); Sfx.play(400, 'sine', 2, 0.1, 800); },
+            "locura": () => { cmd("Delirio.", {anim: 'terremoto', filter: 'invert(100%)'}); },
+            "sueño": () => { cmd("Fase REM.", {filter: 'blur(4px) brightness(1.2)', anim: 'flotar'}); },
+            "pesadilla": () => { cmd("Protocolo crítico.", {filter: 'invert(1) contrast(2)', bgColor: '#100'}); Sfx.play(60, 'sawtooth', 3, 0.4); },
+            "vacio": () => { cmd("Nulidad.", {alpha: 0, bgColor: '#000'}); },
+            "matrix": () => { cmd("Simulación detectada.", {overlay: 'rgba(0,255,0,0.2)', filter: 'contrast(2) sepia(1) hue-rotate(80deg)', envParticles: 'datos'}); },
+            "deseo": () => { cmd("Respuesta endocrina.", {anim: 'latido', overlay: 'rgba(255,0,120,0.2)'}); },
+            "lujuria": () => { cmd("Instinto primario.", {anim: 'latido', bgColor: '#100', overlay: 'rgba(200,0,0,0.3)'}); },
+            "caricia": () => { cmd("Estimulación.", {overlay: 'rgba(255,255,255,0.2)', filter: 'brightness(1.1)'}); },
+            "beso": () => { cmd("Contacto.", {scale: 1.5, overlay: 'rgba(255,100,200,0.3)'}); },
+            "pasion": () => { cmd("Termogénesis.", {anim: 'latido', particles: 'fuego'}); },
+            "placer": () => { cmd("Endorfinas.", {filter: 'brightness(1.3) contrast(0.8)', anim: 'flotar'}); },
+            "asfixia": () => { cmd("Hipoxia.", {overlay: 'rgba(0,0,50,0.5)', anim: 'caos'}); },
+            "sudor": () => { cmd("Exudación.", {overlay: 'rgba(255,255,255,0.1)'}); },
+            "latido": () => { cmd("Contracción miocárdica.", {anim: 'latido'}); Sfx.play(50, 'sine', 0.2, 0.5); },
+            "grito": () => { cmd("Emisión extrema.", {anim: 'terremoto', scale: 1.6}); Sfx.play(2000, 'sawtooth', 0.8, 0.3, 100); },
+            "oscuridad": () => { cmd("Ausencia fotónica.", {bgColor: '#000', filter: 'brightness(0.1)'}); },
+            "luz": () => { cmd("Saturación fotónica.", {bgColor: '#fff', filter: 'brightness(3)'}); },
+            "antiguo": () => { cmd("Deterioro.", {filter: 'sepia(1) contrast(1.5) blur(1px)'}); },
+            "reloj": () => { cmd("Bucle temporal.", {anim: 'reloj'}); },
+            "terremoto": () => { cmd("Falla sísmica.", {anim: 'terremoto'}); Sfx.noise(2, 0.4); },
+            "abismo": () => { cmd("Singularidad menor.", {scale: 0.1, bgColor: '#000'}); },
+            "diablo": () => { cmd("Entidad nivel omega.", {overlay: 'rgba(255,0,0,0.4)', particles: 'fuego', shadowColor: '#f00'}); },
+            "dios": () => { cmd("Presencia suprema.", {filter: 'brightness(2)', shadowColor: '#fff', anim: 'flotar'}); },
+            "alien": () => { cmd("Biología externa.", {filter: 'hue-rotate(130deg) contrast(1.5)', anim: 'flotar'}); },
+            "robot": () => { cmd("Conversión sintética.", {filter: 'grayscale(1) contrast(2)', overlay: 'rgba(100,100,100,0.4)'}); },
+            "zombie": () => { cmd("Necrosis.", {filter: 'sepia(0.8) hue-rotate(40deg)', particles: 'sangre'}); },
+            "estatica": () => { cmd("Interferencia.", {particles: 'estatica'}); Sfx.noise(1, 0.3); },
+            "glitch": () => { cmd("Fallo estructural.", {anim: 'glitch'}); Sfx.noise(0.2, 0.6); },
+            "neon": () => { cmd("Emisión inducida.", {particles: 'neon', bgColor: '#000', filter: 'contrast(2)'}); },
+            "termico": () => { cmd("Espectro infrarrojo.", {filter: 'invert(1) hue-rotate(180deg) saturate(4)'}); },
+            "rayosx": () => { cmd("Radiación penetrante.", {filter: 'invert(1) grayscale(1) contrast(3)', overlay: 'rgba(0,255,255,0.2)'}); },
+            "supernova": () => { cmd("Colapso estelar.", {scale: 4, filter: 'brightness(5)', bgColor: '#fff'}); },
+            "agujeronegro": () => { cmd("Singularidad máxima.", {scale: 0, bgColor: '#000'}); Sfx.play(20, 'sine', 3, 0.5); },
+            "clon": () => { cmd("Trifurcación.", {clones: 2}); },
+            "esponja": () => { cmd("Mutación estructural.", {overlay: 'rgba(255,255,0,0.6)', scale: 1.5}); },
+            "holograma": () => { cmd("Proyección.", {filter: 'opacity(0.6) sepia(1) hue-rotate(160deg)', anim: 'glitch'}); },
+            "liquido": () => { cmd("Estado fluido.", {anim: 'latido', filter: 'blur(4px)'}); },
+            "lluvia": () => { cmd("Precipitación.", {envParticles: 'lluvia'}); Sfx.noise(5, 0.1); },
+            "nieve": () => { cmd("Descenso térmico.", {envParticles: 'nieve', filter: 'brightness(1.2)'}); },
+            "animus": () => { cmd("Sincronización.", {bgColor: '#fff', filter: 'brightness(2)', envParticles: 'datos'}); },
+            "heisenberg": () => { cmd("Pureza 99.1%.", {filter: 'sepia(1) hue-rotate(30deg) saturate(2)', particles: 'cristales'}); },
+            "drift": () => { cmd("Tracción perdida.", {anim: 'drift', particles: 'humo'}); Sfx.noise(2, 0.3); },
+            "saiyan": () => { cmd("Pico de energía.", {anim: 'terremoto', shadowColor: 'gold', particles: 'fuego'}); Sfx.play(300, 'square', 2, 0.2, 600); },
+            "knockout": () => { cmd("Trauma craneal.", {rotation: Math.PI/2, offsetY: 150, filter: 'contrast(2) sepia(1) hue-rotate(-50deg)'}); Sfx.play(1000, 'sine', 0.5, 0.3); },
+            "teemo": () => { cmd("Visión comprometida.", {filter: 'blur(10px) sepia(1) hue-rotate(80deg)', overlay: 'rgba(50,200,50,0.5)'}); },
+            "pantarhei": () => { cmd("Flujo universal.", {anim: 'latido', filter: 'hue-rotate(360deg)'}); canvas.style.transition = 'filter 10s linear'; },
+            "estasis": () => { cmd("Tiempo detenido.", {anim: 'none', particles: 'none', envParticles: 'none'}); Sfx.play(1000, 'sine', 0.1, 0.1, 10); },
+            "desnudo": triggerNSFW,
+            "sexo": triggerNSFW,
+            "nuclear": () => { cmd("Radiación ionizante.", {filter: 'hue-rotate(90deg) brightness(1.5)', shadowColor: '#0f0', anim: 'terremoto', particles: 'estatica'}); Sfx.noise(2, 0.5); },
+            "vampiro": () => { cmd("Heredero nocturno.", {filter: 'grayscale(100%) contrast(1.5)', shadowColor: '#f00', particles: 'sangre'}); },
+            "jedi": () => { cmd("Afinidad a la fuerza.", {shadowColor: '#00f', anim: 'flotar'}); Sfx.play(300, 'sine', 1, 0.2, 400); },
+            "sith": () => { cmd("Lado oscuro.", {shadowColor: '#f00', filter: 'contrast(1.5)', particles: 'rayos'}); Sfx.play(100, 'sawtooth', 1, 0.2); },
+            "cyberpunk": () => { cmd("Implantes ópticos.", {filter: 'saturate(300%) hue-rotate(290deg)', anim: 'glitch', envParticles: 'lluvia'}); },
+            "pixel": () => { cmd("Baja resolución.", {scale: 1, filter: 'contrast(200%)'}); canvas.style.width = '200px'; setTimeout(() => canvas.style.width = '1000px', 5000); },
+            "marioneta": () => { cmd("Control externo.", {anim: 'caos', rotation: Math.PI/8}); },
+            "gravedad0": () => { cmd("Gravedad ausente.", {anim: 'flotar', transform: 'rotate(180deg)'}); },
+            "inmortal": () => { cmd("Regeneración.", {anim: 'latido', shadowColor: 'gold', filter: 'brightness(1.5)'}); },
+            "maldicion": () => { cmd("Afección esotérica.", {overlay: 'rgba(50,0,50,0.6)', shadowColor: 'purple', anim: 'terremoto'}); },
+            "divinidad": () => { cmd("Ascensión.", {filter: 'brightness(5)', scale: 2, anim: 'flotar', shadowColor: '#fff'}); },
+            "medusa": () => { cmd("Petrificación progresiva.", {overlay: 'rgba(0,100,0,0.2)', filter: 'sepia(1) hue-rotate(60deg)'}); setTimeout(() => { if(state.filter !== 'none') cmd("Estado sólido.", {filter: 'grayscale(100%) contrast(1.5)'}); }, 3000); },
+            "tornado": () => { cmd("Vórtice.", {anim: 'tornado', envParticles: 'nieve'}); Sfx.noise(3, 0.6); },
+            "termo": () => { cmd("Sensor térmico.", {filter: 'invert(1) hue-rotate(200deg) saturate(3)'}); },
+            "fantasia": () => { cmd("Alteración fey.", {filter: 'hue-rotate(270deg) saturate(2)', particles: 'burbujas', anim: 'flotar'}); },
+            "magia": () => { cmd("Energía arcana.", {shadowColor: '#f0f', particles: 'neon', anim: 'flotar'}); },
+            "venom": () => { cmd("Simbionte.", {overlay: 'rgba(0,0,0,0.7)', filter: 'contrast(2)', anim: 'glitch', scale: 1.5}); },
+            "rayo": () => { cmd("Descarga.", {bgColor: '#fff', filter: 'brightness(5)', particles: 'rayos'}); Sfx.noise(0.5, 0.8); setTimeout(() => state.bgColor = '#000', 100); }
         };
 
-        // UI Event Listeners
         document.getElementById('btn-accept-warning').addEventListener('click', () => {
             Sfx.init();
-            warningModal.classList.add('hidden');
-            input.disabled = false;
-            input.focus();
-            log.innerText = "Sistema iniciado. Ingrese parámetro.";
+            document.getElementById('warning-modal').classList.add('hidden');
+            input.disabled = false; input.focus();
+            log.innerText = "SOMA ENGINE: Protocolo iniciado.";
+            if(baseImg.complete) requestAnimationFrame(render);
         });
 
-        document.getElementById('menu-btn').addEventListener('click', () => {
-            menuModal.classList.remove('hidden');
-        });
-
+        document.getElementById('menu-btn').addEventListener('click', () => document.getElementById('menu-modal').classList.remove('hidden'));
         document.getElementById('btn-close-menu').addEventListener('click', () => {
-            menuModal.classList.add('hidden');
+            document.getElementById('menu-modal').classList.add('hidden');
             input.focus();
         });
 
         document.getElementById('btn-show-words').addEventListener('click', () => {
-            if(confirm("Advertencia: Ver el listado elimina el factor de descubrimiento. ¿Proceder?")) {
-                document.getElementById('btn-show-words').classList.add('hidden');
-                wordListContainer.classList.remove('hidden');
-                wordListContainer.innerText = Object.keys(cmds).join(', ');
-            }
+            document.getElementById('btn-show-words').classList.add('hidden');
+            const sortedWords = Object.keys(cmds).sort().join(', ');
+            document.getElementById('word-list-container').classList.remove('hidden');
+            document.getElementById('word-list-container').innerText = sortedWords;
         });
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const v = input.value.toLowerCase().trim();
-                if (cmds[v]) cmds[v]();
-                else log.innerText = "Parámetro inválido.";
+                canvas.style.transition = 'filter 0.5s, transform 0.5s'; 
+                if (cmds[v]) cmds[v](); else log.innerText = "Sintaxis no reconocida.";
                 input.value = '';
             }
         });
