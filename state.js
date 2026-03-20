@@ -5,26 +5,38 @@ export const state = {
     scale: 1.3, rotation: 0, bgColor: '#050505',
     particles: 'none', alpha: 1, clones: 0,
     offsetX: 0, offsetY: 0, shadowColor: 'transparent',
-    envParticles: 'none', interactive: false, ripples: [], transform: 'none',
-    scaleY: 1, scaleX: 1
+    envParticles: 'none', interactive: false, ripples: [],
+    targetScaleX: 1, targetScaleY: 1, targetRotation: 0,
+    aberration: 0, physicsEnabled: false, vx: 0, vy: 0,
+    isDragging: false, parallaxIntensity: 0, pose: 'subject'
 };
 
 export const activeTimers = {};
 export let nsfwInterval = null;
+export const discoveredWords = new Set();
 
 const defaults = { 
     overlay: 'none', filter: 'none', anim: 'none', scale: 1.3, 
     rotation: 0, bgColor: '#050505', particles: 'none', alpha: 1, 
     clones: 0, offsetX: 0, offsetY: 0, shadowColor: 'transparent', 
-    envParticles: 'none', transform: 'none', scaleX: 1, scaleY: 1
+    envParticles: 'none', targetScaleX: 1, targetScaleY: 1, 
+    targetRotation: 0, aberration: 0, physicsEnabled: false, 
+    vx: 0, vy: 0, isDragging: false, parallaxIntensity: 0, pose: 'subject'
 };
 
 export const executeCmd = (msg, mod, logEl, dur = 5000) => {
     logEl.innerText = msg;
+    logEl.style.opacity = 1;
+    
+    if (activeTimers['wording']) clearTimeout(activeTimers['wording']);
+    activeTimers['wording'] = setTimeout(() => {
+        logEl.innerText = "SOMA: Aguardando...";
+    }, dur);
+
     for (const key in mod) {
         if (activeTimers[key]) clearTimeout(activeTimers[key]);
         state[key] = mod[key];
-        if (dur > 0) {
+        if (dur > 0 && key !== 'vx' && key !== 'vy') {
             activeTimers[key] = setTimeout(() => {
                 state[key] = defaults[key] !== undefined ? defaults[key] : state[key];
                 delete activeTimers[key];
@@ -33,7 +45,7 @@ export const executeCmd = (msg, mod, logEl, dur = 5000) => {
     }
 };
 
-export const resetState = () => {
+export const resetState = (logEl) => {
     Object.values(activeTimers).forEach(clearTimeout); 
     for(let key in activeTimers) delete activeTimers[key];
     if (nsfwInterval) { clearInterval(nsfwInterval); nsfwInterval = null; }
@@ -41,11 +53,9 @@ export const resetState = () => {
     const nsfwLayer = document.getElementById('nsfw-layer');
     if (nsfwLayer) { nsfwLayer.classList.remove('active'); nsfwLayer.innerHTML = ''; }
     
-    const canvas = document.getElementById('gameCanvas');
-    if (canvas) canvas.style.transform = 'none';
-    
     Object.assign(state, defaults);
     state.ripples = [];
+    if(logEl) logEl.innerText = "SOMA: Purga completa.";
 };
 
 export const triggerNSFW = (logEl) => {
@@ -70,5 +80,6 @@ export const triggerNSFW = (logEl) => {
     setTimeout(() => {
         nsfwLayer.classList.remove('active');
         clearInterval(nsfwInterval); nsfwInterval = null; nsfwLayer.innerHTML = '';
+        logEl.innerText = "SOMA: Aguardando...";
     }, 5000);
 };

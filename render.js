@@ -1,135 +1,82 @@
 import { state } from './state.js';
 
-export const baseImg = new Image();
-baseImg.src = 'imagen.png';
-let frame = 0;
+export const images = {};
+const poses = ['subject', 'cry', 'fight', 'happy', 'lying', 'running', 'secret', 'squat', 'worried'];
+export let allLoaded = false;
+let loadedCount = 0;
 
-// Caché off-screen para partículas complejas (Incremento de FPS)
+poses.forEach(pose => {
+    const img = new Image();
+    img.src = `Hikaru/${pose}.png`;
+    img.onload = () => {
+        loadedCount++;
+        if (loadedCount === poses.length) allLoaded = true;
+    };
+    images[pose] = img;
+});
+
+let frame = 0;
+let currentScaleX = 1;
+let currentScaleY = 1;
+let currentRotation = 0;
+
 const spriteCache = {};
 const buildCache = () => {
-    // Corazón
-    const cvsHeart = document.createElement('canvas');
-    cvsHeart.width = 30; cvsHeart.height = 30;
-    const ctxH = cvsHeart.getContext('2d');
-    ctxH.fillStyle = '#f0f'; ctxH.font = '24px Arial'; ctxH.fillText('❤', 2, 24);
-    spriteCache.heart = cvsHeart;
+    const cvsHeart = document.createElement('canvas'); cvsHeart.width = 30; cvsHeart.height = 30;
+    const ctxH = cvsHeart.getContext('2d'); ctxH.fillStyle = '#f0f'; ctxH.font = '24px Arial'; ctxH.fillText('❤', 2, 24); spriteCache.heart = cvsHeart;
 
-    // Zzz
-    const cvsZ = document.createElement('canvas');
-    cvsZ.width = 30; cvsZ.height = 30;
-    const ctxZ = cvsZ.getContext('2d');
-    ctxZ.fillStyle = '#fff'; ctxZ.font = '24px Arial'; ctxZ.fillText('Z', 5, 24);
-    spriteCache.z = cvsZ;
+    const cvsZ = document.createElement('canvas'); cvsZ.width = 30; cvsZ.height = 30;
+    const ctxZ = cvsZ.getContext('2d'); ctxZ.fillStyle = '#fff'; ctxZ.font = '24px Arial'; ctxZ.fillText('Z', 5, 24); spriteCache.z = cvsZ;
 };
 buildCache();
 
-// O(1) Dictionary Mapping: Environment
+const lerp = (start, end, factor) => start + (end - start) * factor;
+
 const envRenderers = {
-    'lluvia': (ctx, w, h, f) => {
-        ctx.fillStyle = 'rgba(150, 200, 255, 0.6)';
-        for(let i=0; i<120; i++) ctx.fillRect(Math.random()*w, (f*30 + i*30)%h, 2, 25);
-    },
-    'nieve': (ctx, w, h, f) => {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        for(let i=0; i<100; i++) { ctx.beginPath(); ctx.arc((i*40 + Math.sin(f*0.02 + i)*40)%w, (f*4 + i*50)%h, Math.random()*4+1, 0, Math.PI*2); ctx.fill(); }
-    },
-    'datos': (ctx, w, h, f) => {
-        ctx.fillStyle = '#0f0'; ctx.font = '16px monospace';
-        for(let i=0; i<80; i++) ctx.fillText(Math.random()>0.5?'1':'0', (i*20)%w, (f*15 + i*40)%h);
-    },
-    'hojas': (ctx, w, h, f) => {
-        ctx.fillStyle = '#8a3';
-        for(let i=0; i<40; i++) { ctx.beginPath(); ctx.ellipse((f*3 + i*60)%w, (f*4 + i*50)%h, 10, 5, f*0.1 + i, 0, Math.PI*2); ctx.fill(); }
-    },
-    'estrellas': (ctx, w, h, f) => {
-        ctx.fillStyle = '#fff';
-        for(let i=0; i<200; i++) { if(Math.random()>0.9) ctx.fillRect((i*19)%w, (i*27)%h, Math.random()*3, Math.random()*3); }
-    },
-    'petalos': (ctx, w, h, f) => {
-        ctx.fillStyle = 'rgba(255, 180, 200, 0.8)';
-        for(let i=0; i<50; i++) { ctx.beginPath(); ctx.arc((f*2 + i*45)%w, (f*3 + i*60)%h, 6, 0, Math.PI*2); ctx.fill(); }
-    },
-    'notas': (ctx, w, h, f) => {
-        ctx.fillStyle = '#fff'; ctx.font = '24px Arial';
-        const symbols = ['♪', '♫', '♬'];
-        for(let i=0; i<15; i++) ctx.fillText(symbols[i%3], (i*80 + Math.sin(f*0.05)*30)%w, h - (f*2 + i*70)%h);
-    },
+    'lluvia': (ctx, w, h, f) => { ctx.fillStyle = 'rgba(150, 200, 255, 0.6)'; for(let i=0; i<120; i++) ctx.fillRect(Math.random()*w, (f*30 + i*30)%h, 2, 25); },
+    'nieve': (ctx, w, h, f) => { ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; for(let i=0; i<100; i++) { ctx.beginPath(); ctx.arc((i*40 + Math.sin(f*0.02 + i)*40)%w, (f*4 + i*50)%h, Math.random()*4+1, 0, Math.PI*2); ctx.fill(); } },
+    'datos': (ctx, w, h, f) => { ctx.fillStyle = '#0f0'; ctx.font = '16px monospace'; for(let i=0; i<80; i++) ctx.fillText(Math.random()>0.5?'1':'0', (i*20)%w, (f*15 + i*40)%h); },
+    'hojas': (ctx, w, h, f) => { ctx.fillStyle = '#8a3'; for(let i=0; i<40; i++) { ctx.beginPath(); ctx.ellipse((f*3 + i*60)%w, (f*4 + i*50)%h, 10, 5, f*0.1 + i, 0, Math.PI*2); ctx.fill(); } },
+    'estrellas': (ctx, w, h, f) => { ctx.fillStyle = '#fff'; for(let i=0; i<200; i++) { if(Math.random()>0.9) ctx.fillRect((i*19)%w, (i*27)%h, Math.random()*3, Math.random()*3); } },
+    'petalos': (ctx, w, h, f) => { ctx.fillStyle = 'rgba(255, 180, 200, 0.8)'; for(let i=0; i<50; i++) { ctx.beginPath(); ctx.arc((f*2 + i*45)%w, (f*3 + i*60)%h, 6, 0, Math.PI*2); ctx.fill(); } },
+    'notas': (ctx, w, h, f) => { ctx.fillStyle = '#fff'; ctx.font = '24px Arial'; const symbols = ['♪', '♫', '♬']; for(let i=0; i<15; i++) ctx.fillText(symbols[i%3], (i*80 + Math.sin(f*0.05)*30)%w, h - (f*2 + i*70)%h); },
     'none': () => {}
 };
 
-// O(1) Dictionary Mapping: Particles
 const particleRenderers = {
-    'sangre': (ctx, x, y, w, h, f) => {
-        ctx.fillStyle = '#700';
-        for(let i=0; i<50; i++) ctx.fillRect(x + Math.abs(Math.sin(i*13))*w, y + (f*5 + i*25)%h, 4, 12);
-    },
-    'fuego': (ctx, x, y, w, h, f) => {
-        for(let i=0; i<50; i++) {
-            ctx.fillStyle = `rgba(255, ${Math.random()*150}, 0, 0.8)`;
-            ctx.beginPath(); ctx.arc(x + Math.random()*w, y + h - (f*7 + i*18)%h, Math.random()*14, 0, Math.PI*2); ctx.fill();
-        }
-    },
-    'estatica': (ctx, x, y, w, h, f) => {
-        for(let i=0; i<200; i++) { ctx.fillStyle = Math.random()>0.5?'#fff':'#000'; ctx.fillRect(x+Math.random()*w, y+Math.random()*h, 3, 3); }
-    },
-    'neon': (ctx, x, y, w, h, f) => {
-        ctx.strokeStyle = `hsl(${f*8%360}, 100%, 50%)`; ctx.lineWidth = 6; ctx.strokeRect(x+5, y+5, w-10, h-10);
-    },
-    'burbujas': (ctx, x, y, w, h, f) => {
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-        for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(x + Math.abs(Math.cos(i*7))*w, y + h - (f*3 + i*30)%h, 6, 0, Math.PI*2); ctx.stroke(); }
-    },
-    'cristales': (ctx, x, y, w, h, f) => {
-        ctx.fillStyle = 'rgba(0, 200, 255, 0.9)';
-        for(let i=0; i<30; i++) { ctx.fillRect(x + Math.random()*w, y + (f*3 + i*40)%h, 5, 5); }
-    },
-    'humo': (ctx, x, y, w, h, f) => {
-        ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
-        for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(x + Math.random()*w, y + h - (f*4 + i*20)%h, Math.random()*25+10, 0, Math.PI*2); ctx.fill(); }
-    },
-    'rayos': (ctx, x, y, w, h, f) => {
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-        if(Math.random()>0.6) {
-            ctx.beginPath(); ctx.moveTo(x + Math.random()*w, y);
-            ctx.lineTo(x + Math.random()*w, y + h/2); ctx.lineTo(x + Math.random()*w, y + h); ctx.stroke();
-        }
-    },
-    'corazones': (ctx, x, y, w, h, f) => {
-        for(let i=0; i<15; i++) ctx.drawImage(spriteCache.heart, x + Math.abs(Math.sin(i*11))*w, y + h - (f*3 + i*20)%h);
-    },
-    'zzz': (ctx, x, y, w, h, f) => {
-        for(let i=0; i<8; i++) ctx.drawImage(spriteCache.z, x + Math.abs(Math.cos(i*5))*w, y + h/2 - (f*1.5 + i*40)%(h/2));
-    },
-    'aura_dorada': (ctx, x, y, w, h, f) => {
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
-        for(let i=0; i<6; i++) { ctx.beginPath(); ctx.ellipse(x+w/2, y+h/2, w/1.5 + Math.sin(f*0.15+i)*15, h/1.5 + Math.cos(f*0.15+i)*15, 0, 0, Math.PI*2); ctx.fill(); }
-    },
-    'polvo': (ctx, x, y, w, h, f) => {
-        ctx.fillStyle = 'rgba(150, 150, 150, 0.6)';
-        for(let i=0; i<70; i++) ctx.fillRect(x + Math.random()*w, y + (f*1.5 + i*15)%h, 3, 3);
-    },
+    'sangre': (ctx, x, y, w, h, f) => { ctx.fillStyle = '#700'; for(let i=0; i<50; i++) ctx.fillRect(x + Math.abs(Math.sin(i*13))*w, y + (f*5 + i*25)%h, 4, 12); },
+    'fuego': (ctx, x, y, w, h, f) => { for(let i=0; i<50; i++) { ctx.fillStyle = `rgba(255, ${Math.random()*150}, 0, 0.8)`; ctx.beginPath(); ctx.arc(x + Math.random()*w, y + h - (f*7 + i*18)%h, Math.random()*14, 0, Math.PI*2); ctx.fill(); } },
+    'estatica': (ctx, x, y, w, h, f) => { for(let i=0; i<200; i++) { ctx.fillStyle = Math.random()>0.5?'#fff':'#000'; ctx.fillRect(x+Math.random()*w, y+Math.random()*h, 3, 3); } },
+    'neon': (ctx, x, y, w, h, f) => { ctx.strokeStyle = `hsl(${f*8%360}, 100%, 50%)`; ctx.lineWidth = 6; ctx.strokeRect(x+5, y+5, w-10, h-10); },
+    'burbujas': (ctx, x, y, w, h, f) => { ctx.strokeStyle = 'rgba(255,255,255,0.5)'; for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(x + Math.abs(Math.cos(i*7))*w, y + h - (f*3 + i*30)%h, 6, 0, Math.PI*2); ctx.stroke(); } },
+    'cristales': (ctx, x, y, w, h, f) => { ctx.fillStyle = 'rgba(0, 200, 255, 0.9)'; for(let i=0; i<30; i++) { ctx.fillRect(x + Math.random()*w, y + (f*3 + i*40)%h, 5, 5); } },
+    'humo': (ctx, x, y, w, h, f) => { ctx.fillStyle = 'rgba(100, 100, 100, 0.3)'; for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(x + Math.random()*w, y + h - (f*4 + i*20)%h, Math.random()*25+10, 0, Math.PI*2); ctx.fill(); } },
+    'rayos': (ctx, x, y, w, h, f) => { ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; if(Math.random()>0.6) { ctx.beginPath(); ctx.moveTo(x + Math.random()*w, y); ctx.lineTo(x + Math.random()*w, y + h/2); ctx.lineTo(x + Math.random()*w, y + h); ctx.stroke(); } },
+    'corazones': (ctx, x, y, w, h, f) => { for(let i=0; i<15; i++) ctx.drawImage(spriteCache.heart, x + Math.abs(Math.sin(i*11))*w, y + h - (f*3 + i*20)%h); },
+    'zzz': (ctx, x, y, w, h, f) => { for(let i=0; i<8; i++) ctx.drawImage(spriteCache.z, x + Math.abs(Math.cos(i*5))*w, y + h/2 - (f*1.5 + i*40)%(h/2)); },
+    'aura_dorada': (ctx, x, y, w, h, f) => { ctx.fillStyle = 'rgba(255, 215, 0, 0.15)'; for(let i=0; i<6; i++) { ctx.beginPath(); ctx.ellipse(x+w/2, y+h/2, w/1.5 + Math.sin(f*0.15+i)*15, h/1.5 + Math.cos(f*0.15+i)*15, 0, 0, Math.PI*2); ctx.fill(); } },
+    'polvo': (ctx, x, y, w, h, f) => { ctx.fillStyle = 'rgba(150, 150, 150, 0.6)'; for(let i=0; i<70; i++) ctx.fillRect(x + Math.random()*w, y + (f*1.5 + i*15)%h, 3, 3); },
     'none': () => {}
 };
 
-// Modificadores estructurales base
-const applyAnimModifiers = (modState, f, canvas, mouseX, mouseY) => {
+const applyAnimModifiers = (modState, f, mouseX, mouseY, canvasWidth, canvasHeight) => {
     switch (modState.anim) {
-        case 'flotar': modState.offsetY += Math.sin(f * 0.05) * 40; modState.rotation += Math.sin(f * 0.02) * 0.05; break;
-        case 'latido': const s = 1 + Math.sin(f * 0.2) * 0.1; modState.scaleX *= s; modState.scaleY *= s; break;
-        case 'caos': modState.offsetX += (Math.random()-0.5)*20; modState.offsetY += (Math.random()-0.5)*20; modState.rotation += (Math.random()-0.5)*0.1; break;
+        case 'flotar': modState.offsetY += Math.sin(f * 0.05) * 40; currentRotation += Math.sin(f * 0.02) * 0.05; break;
+        case 'latido': const s = 1 + Math.sin(f * 0.2) * 0.1; currentScaleX *= s; currentScaleY *= s; break;
+        case 'caos': modState.offsetX += (Math.random()-0.5)*20; modState.offsetY += (Math.random()-0.5)*20; currentRotation += (Math.random()-0.5)*0.1; break;
         case 'terremoto': modState.offsetX += (Math.random()-0.5)*45; modState.offsetY += (Math.random()-0.5)*45; break;
-        case 'glitch': if(Math.random()>0.8) { modState.offsetX += (Math.random()-0.5)*100; modState.scaleY *= 1.2; } break;
-        case 'drift': modState.offsetX += Math.sin(f*0.5)*20; canvas.style.filter = 'drop-shadow(-30px 0px 10px rgba(255,255,255,0.3)) blur(2px)'; break;
-        case 'reloj': modState.rotation += 0.05; break;
-        case 'tornado': modState.rotation += 0.4; modState.scaleX = 1 + Math.sin(f*0.1)*0.8; break;
-        case 'gelatina': modState.scaleX *= 1 + Math.sin(f*0.2)*0.2; modState.scaleY *= 1 + Math.cos(f*0.2)*0.2; break;
+        case 'glitch': if(Math.random()>0.8) { modState.offsetX += (Math.random()-0.5)*100; currentScaleY *= 1.2; } break;
+        case 'drift': modState.offsetX += Math.sin(f*0.5)*20; break;
+        case 'reloj': currentRotation += 0.05; break;
+        case 'tornado': currentRotation += 0.4; currentScaleX = 1 + Math.sin(f*0.1)*0.8; break;
+        case 'gelatina': currentScaleX *= 1 + Math.sin(f*0.2)*0.2; currentScaleY *= 1 + Math.cos(f*0.2)*0.2; break;
         case 'vibracion': modState.offsetX += (Math.random()-0.5)*8; modState.offsetY += (Math.random()-0.5)*8; break;
-        case 'magnetico': modState.offsetX += (mouseX - canvas.width/2)*0.15; modState.offsetY += (mouseY - canvas.height/2)*0.15; break;
-        case 'repeler': modState.offsetX -= (mouseX - canvas.width/2)*0.15; modState.offsetY -= (mouseY - canvas.height/2)*0.15; break;
+        case 'magnetico': modState.offsetX += (mouseX - canvasWidth/2)*0.15; modState.offsetY += (mouseY - canvasHeight/2)*0.15; break;
+        case 'repeler': modState.offsetX -= (mouseX - canvasWidth/2)*0.15; modState.offsetY -= (mouseY - canvasHeight/2)*0.15; break;
         case 'rebote': modState.offsetY += Math.abs(Math.sin(f * 0.15)) * -80; break;
-        case 'respirar': modState.scaleX *= 1 + Math.sin(f * 0.05) * 0.04; modState.scaleY *= 1 + Math.sin(f * 0.05) * 0.04; break;
-        case 'sacudir': modState.rotation += (Math.random()-0.5)*0.3; modState.offsetX += (Math.random()-0.5)*15; modState.offsetY += (Math.random()-0.5)*15; break;
-        case 'balanceo': modState.rotation += Math.sin(f * 0.05) * 0.3; break;
+        case 'respirar': currentScaleX *= 1 + Math.sin(f * 0.05) * 0.04; currentScaleY *= 1 + Math.sin(f * 0.05) * 0.04; break;
+        case 'sacudir': currentRotation += (Math.random()-0.5)*0.3; modState.offsetX += (Math.random()-0.5)*15; modState.offsetY += (Math.random()-0.5)*15; break;
+        case 'balanceo': currentRotation += Math.sin(f * 0.05) * 0.3; break;
     }
 };
 
@@ -137,27 +84,63 @@ export const startRenderLoop = (canvas, ctx, getMouseData) => {
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         document.body.style.backgroundColor = state.bgColor;
-        canvas.style.filter = state.filter;
-        canvas.style.transform = state.transform;
-
-        if (!baseImg.complete) { requestAnimationFrame(render); return; }
-
-        const mouseData = getMouseData();
-        const aspect = baseImg.width / baseImg.height;
         
-        // Copia de estado temporal para mutaciones por cuadro
+        // Composición de filtros (permitiendo aberración sobre base)
+        let baseFilter = state.filter;
+        if(state.anim === 'drift') baseFilter += ' drop-shadow(-30px 0px 10px rgba(255,255,255,0.3)) blur(2px)';
+        if(state.aberration > 0) baseFilter += ` drop-shadow(${state.aberration}px 0 0 rgba(255,0,0,0.5)) drop-shadow(-${state.aberration}px 0 0 rgba(0,0,255,0.5))`;
+        canvas.style.filter = baseFilter;
+
+        if (!allLoaded) { requestAnimationFrame(render); return; }
+
+        const currentImg = images[state.pose] || images['subject'];
+        const mouseData = getMouseData();
+        const aspect = currentImg.width / currentImg.height;
+        
+        // Transiciones no lineales (Easing)
+        currentScaleX = lerp(currentScaleX, state.targetScaleX, 0.1);
+        currentScaleY = lerp(currentScaleY, state.targetScaleY, 0.1);
+        currentRotation = lerp(currentRotation, state.targetRotation, 0.1);
+
+        // Físicas
+        if (state.physicsEnabled && !state.isDragging) {
+            state.vy += 0.8; // Gravedad
+            state.offsetY += state.vy;
+            state.offsetX += state.vx;
+            // Suelo de rebote
+            const ground = (canvas.height/2) - (200 * state.scale);
+            if (state.offsetY > ground) {
+                state.offsetY = ground;
+                state.vy *= -0.6; // Amortiguación
+                state.vx *= 0.9; // Fricción
+            }
+        }
+
         let modState = { 
-            scaleX: state.scaleX, scaleY: state.scaleY, 
-            offsetX: state.offsetX, offsetY: state.offsetY, 
-            rotation: state.rotation, anim: state.anim 
+            offsetX: state.offsetX, offsetY: state.offsetY, anim: state.anim 
         };
         
-        applyAnimModifiers(modState, frame, canvas, mouseData.x, mouseData.y);
+        applyAnimModifiers(modState, frame, mouseData.x, mouseData.y, canvas.width, canvas.height);
 
         let h = 450 * state.scale;
         let w = h * aspect;
 
-        // Renderizado ambiental O(1)
+        // Entorno Parallax multicapa
+        if (state.parallaxIntensity > 0) {
+            const px = (mouseData.x - canvas.width/2) * state.parallaxIntensity;
+            const py = (mouseData.y - canvas.height/2) * state.parallaxIntensity;
+            
+            ctx.fillStyle = 'rgba(20, 20, 30, 0.5)';
+            ctx.fillRect(px * 0.2, py * 0.2, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.1)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i + px*0.5, 0); ctx.lineTo(i + px*0.5, canvas.height); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i + py*0.5); ctx.lineTo(canvas.width, i + py*0.5); ctx.stroke();
+            }
+        }
+
         if (state.anim === 'flotar' || state.anim === 'gravedad0' || state.anim === 'abduccion') {
             ctx.fillStyle = `rgba(0,0,0,${Math.max(0.1, 0.6 - (modState.offsetY/150))})`;
             ctx.beginPath(); ctx.ellipse(canvas.width/2, canvas.height/2 + h/2 + 40, w/1.5, 15, 0, 0, Math.PI*2); ctx.fill();
@@ -175,12 +158,11 @@ export const startRenderLoop = (canvas, ctx, getMouseData) => {
             }
         }
 
-        // Función de renderizado de sujeto
         const drawSubject = (drawX, drawY, drawW, drawH, overrideAlpha = null) => {
             ctx.save();
             ctx.translate(canvas.width/2 + modState.offsetX, canvas.height/2 + modState.offsetY);
-            ctx.rotate(modState.rotation);
-            ctx.scale(modState.scaleX, modState.scaleY);
+            ctx.rotate(currentRotation);
+            ctx.scale(currentScaleX, currentScaleY);
             ctx.translate(-(canvas.width/2 + modState.offsetX), -(canvas.height/2 + modState.offsetY));
 
             if(state.shadowColor !== 'transparent') { ctx.shadowBlur = 50; ctx.shadowColor = state.shadowColor; }
@@ -190,17 +172,16 @@ export const startRenderLoop = (canvas, ctx, getMouseData) => {
             
             if (state.anim === 'glitch_severo') {
                 ctx.globalAlpha = 0.5; ctx.filter = 'hue-rotate(90deg)';
-                ctx.drawImage(baseImg, drawX - 15, drawY, drawW, drawH);
+                ctx.drawImage(currentImg, drawX - 15, drawY, drawW, drawH);
                 ctx.filter = 'hue-rotate(270deg)';
-                ctx.drawImage(baseImg, drawX + 15, drawY, drawW, drawH);
+                ctx.drawImage(currentImg, drawX + 15, drawY, drawW, drawH);
                 ctx.filter = 'none';
             }
             
-            ctx.drawImage(baseImg, drawX, drawY, drawW, drawH);
+            ctx.drawImage(currentImg, drawX, drawY, drawW, drawH);
             ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'source-atop';
             if (state.overlay !== 'none') { ctx.fillStyle = state.overlay; ctx.fillRect(drawX, drawY, drawW, drawH); }
 
-            // Renderizado de partículas de sujeto O(1)
             (particleRenderers[state.particles] || particleRenderers['none'])(ctx, drawX, drawY, drawW, drawH, frame);
 
             ctx.restore();
