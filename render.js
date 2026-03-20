@@ -1,209 +1,268 @@
-import { state } from './state.js';
+import { state, target, physics } from './state.js';
 
 export const images = {};
-const poses = ['subject', 'cry', 'fight', 'happy', 'lying', 'running', 'secret', 'squat', 'worried'];
+const poses = [
+    'subject', 'cry', 'fight', 'happy', 'lying', 'running', 'secret', 'squat', 'worried',
+    'collapsed', 'disjointed', 'falling', 'meditating', 'power', 'shield', 'slumped', 'tpose'
+];
 export let allLoaded = false;
 let loadedCount = 0;
+
+const checkLoadComplete = () => {
+    loadedCount++;
+    if (loadedCount === poses.length) allLoaded = true;
+};
 
 poses.forEach(pose => {
     const img = new Image();
     img.src = `Hikaru/${pose}.png`;
-    img.onload = () => {
-        loadedCount++;
-        if (loadedCount === poses.length) allLoaded = true;
+    img.onload = checkLoadComplete;
+    img.onerror = () => {
+        console.warn(`SOMA: Recurso gráfico no hallado (${pose}.png). Fallback instanciado.`);
+        checkLoadComplete();
     };
     images[pose] = img;
 });
 
-let frame = 0;
-let currentScaleX = 1;
-let currentScaleY = 1;
-let currentRotation = 0;
-
-const spriteCache = {};
-const buildCache = () => {
-    const cvsHeart = document.createElement('canvas'); cvsHeart.width = 30; cvsHeart.height = 30;
-    const ctxH = cvsHeart.getContext('2d'); ctxH.fillStyle = '#f0f'; ctxH.font = '24px Arial'; ctxH.fillText('❤', 2, 24); spriteCache.heart = cvsHeart;
-
-    const cvsZ = document.createElement('canvas'); cvsZ.width = 30; cvsZ.height = 30;
-    const ctxZ = cvsZ.getContext('2d'); ctxZ.fillStyle = '#fff'; ctxZ.font = '24px Arial'; ctxZ.fillText('Z', 5, 24); spriteCache.z = cvsZ;
-};
-buildCache();
-
 const lerp = (start, end, factor) => start + (end - start) * factor;
 
-const envRenderers = {
-    'lluvia': (ctx, w, h, f) => { ctx.fillStyle = 'rgba(150, 200, 255, 0.6)'; for(let i=0; i<120; i++) ctx.fillRect(Math.random()*w, (f*30 + i*30)%h, 2, 25); },
-    'nieve': (ctx, w, h, f) => { ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; for(let i=0; i<100; i++) { ctx.beginPath(); ctx.arc((i*40 + Math.sin(f*0.02 + i)*40)%w, (f*4 + i*50)%h, Math.random()*4+1, 0, Math.PI*2); ctx.fill(); } },
-    'datos': (ctx, w, h, f) => { ctx.fillStyle = '#0f0'; ctx.font = '16px monospace'; for(let i=0; i<80; i++) ctx.fillText(Math.random()>0.5?'1':'0', (i*20)%w, (f*15 + i*40)%h); },
-    'hojas': (ctx, w, h, f) => { ctx.fillStyle = '#8a3'; for(let i=0; i<40; i++) { ctx.beginPath(); ctx.ellipse((f*3 + i*60)%w, (f*4 + i*50)%h, 10, 5, f*0.1 + i, 0, Math.PI*2); ctx.fill(); } },
-    'estrellas': (ctx, w, h, f) => { ctx.fillStyle = '#fff'; for(let i=0; i<200; i++) { if(Math.random()>0.9) ctx.fillRect((i*19)%w, (i*27)%h, Math.random()*3, Math.random()*3); } },
-    'petalos': (ctx, w, h, f) => { ctx.fillStyle = 'rgba(255, 180, 200, 0.8)'; for(let i=0; i<50; i++) { ctx.beginPath(); ctx.arc((f*2 + i*45)%w, (f*3 + i*60)%h, 6, 0, Math.PI*2); ctx.fill(); } },
-    'notas': (ctx, w, h, f) => { ctx.fillStyle = '#fff'; ctx.font = '24px Arial'; const symbols = ['♪', '♫', '♬']; for(let i=0; i<15; i++) ctx.fillText(symbols[i%3], (i*80 + Math.sin(f*0.05)*30)%w, h - (f*2 + i*70)%h); },
-    'none': () => {}
-};
+const vsSource = `
+    attribute vec2 a_position;
+    attribute vec2 a_texCoord;
+    varying vec2 v_texCoord;
+    void main() {
+        gl_Position = vec4(a_position, 0, 1);
+        v_texCoord = a_texCoord;
+    }
+`;
 
-const particleRenderers = {
-    'sangre': (ctx, x, y, w, h, f) => { ctx.fillStyle = '#700'; for(let i=0; i<50; i++) ctx.fillRect(x + Math.abs(Math.sin(i*13))*w, y + (f*5 + i*25)%h, 4, 12); },
-    'fuego': (ctx, x, y, w, h, f) => { for(let i=0; i<50; i++) { ctx.fillStyle = `rgba(255, ${Math.random()*150}, 0, 0.8)`; ctx.beginPath(); ctx.arc(x + Math.random()*w, y + h - (f*7 + i*18)%h, Math.random()*14, 0, Math.PI*2); ctx.fill(); } },
-    'estatica': (ctx, x, y, w, h, f) => { for(let i=0; i<200; i++) { ctx.fillStyle = Math.random()>0.5?'#fff':'#000'; ctx.fillRect(x+Math.random()*w, y+Math.random()*h, 3, 3); } },
-    'neon': (ctx, x, y, w, h, f) => { ctx.strokeStyle = `hsl(${f*8%360}, 100%, 50%)`; ctx.lineWidth = 6; ctx.strokeRect(x+5, y+5, w-10, h-10); },
-    'burbujas': (ctx, x, y, w, h, f) => { ctx.strokeStyle = 'rgba(255,255,255,0.5)'; for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(x + Math.abs(Math.cos(i*7))*w, y + h - (f*3 + i*30)%h, 6, 0, Math.PI*2); ctx.stroke(); } },
-    'cristales': (ctx, x, y, w, h, f) => { ctx.fillStyle = 'rgba(0, 200, 255, 0.9)'; for(let i=0; i<30; i++) { ctx.fillRect(x + Math.random()*w, y + (f*3 + i*40)%h, 5, 5); } },
-    'humo': (ctx, x, y, w, h, f) => { ctx.fillStyle = 'rgba(100, 100, 100, 0.3)'; for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(x + Math.random()*w, y + h - (f*4 + i*20)%h, Math.random()*25+10, 0, Math.PI*2); ctx.fill(); } },
-    'rayos': (ctx, x, y, w, h, f) => { ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; if(Math.random()>0.6) { ctx.beginPath(); ctx.moveTo(x + Math.random()*w, y); ctx.lineTo(x + Math.random()*w, y + h/2); ctx.lineTo(x + Math.random()*w, y + h); ctx.stroke(); } },
-    'corazones': (ctx, x, y, w, h, f) => { for(let i=0; i<15; i++) ctx.drawImage(spriteCache.heart, x + Math.abs(Math.sin(i*11))*w, y + h - (f*3 + i*20)%h); },
-    'zzz': (ctx, x, y, w, h, f) => { for(let i=0; i<8; i++) ctx.drawImage(spriteCache.z, x + Math.abs(Math.cos(i*5))*w, y + h/2 - (f*1.5 + i*40)%(h/2)); },
-    'aura_dorada': (ctx, x, y, w, h, f) => { ctx.fillStyle = 'rgba(255, 215, 0, 0.15)'; for(let i=0; i<6; i++) { ctx.beginPath(); ctx.ellipse(x+w/2, y+h/2, w/1.5 + Math.sin(f*0.15+i)*15, h/1.5 + Math.cos(f*0.15+i)*15, 0, 0, Math.PI*2); ctx.fill(); } },
-    'polvo': (ctx, x, y, w, h, f) => { ctx.fillStyle = 'rgba(150, 150, 150, 0.6)'; for(let i=0; i<70; i++) ctx.fillRect(x + Math.random()*w, y + (f*1.5 + i*15)%h, 3, 3); },
-    'none': () => {}
-};
+const fsSource = `
+    precision mediump float;
+    uniform sampler2D u_image;
+    uniform float u_time;
+    uniform float u_aberration;
+    uniform float u_distortion;
+    uniform float u_bloom;
+    varying vec2 v_texCoord;
 
-const applyAnimModifiers = (modState, f, mouseX, mouseY, canvasWidth, canvasHeight) => {
-    switch (modState.anim) {
-        case 'flotar': modState.offsetY += Math.sin(f * 0.05) * 40; currentRotation += Math.sin(f * 0.02) * 0.05; break;
-        case 'latido': const s = 1 + Math.sin(f * 0.2) * 0.1; currentScaleX *= s; currentScaleY *= s; break;
-        case 'caos': modState.offsetX += (Math.random()-0.5)*20; modState.offsetY += (Math.random()-0.5)*20; currentRotation += (Math.random()-0.5)*0.1; break;
-        case 'terremoto': modState.offsetX += (Math.random()-0.5)*45; modState.offsetY += (Math.random()-0.5)*45; break;
-        case 'glitch': if(Math.random()>0.8) { modState.offsetX += (Math.random()-0.5)*100; currentScaleY *= 1.2; } break;
-        case 'drift': modState.offsetX += Math.sin(f*0.5)*20; break;
-        case 'reloj': currentRotation += 0.05; break;
-        case 'tornado': currentRotation += 0.4; currentScaleX = 1 + Math.sin(f*0.1)*0.8; break;
-        case 'gelatina': currentScaleX *= 1 + Math.sin(f*0.2)*0.2; currentScaleY *= 1 + Math.cos(f*0.2)*0.2; break;
-        case 'vibracion': modState.offsetX += (Math.random()-0.5)*8; modState.offsetY += (Math.random()-0.5)*8; break;
-        case 'magnetico': modState.offsetX += (mouseX - canvasWidth/2)*0.15; modState.offsetY += (mouseY - canvasHeight/2)*0.15; break;
-        case 'repeler': modState.offsetX -= (mouseX - canvasWidth/2)*0.15; modState.offsetY -= (mouseY - canvasHeight/2)*0.15; break;
-        case 'rebote': modState.offsetY += Math.abs(Math.sin(f * 0.15)) * -80; break;
-        case 'respirar': currentScaleX *= 1 + Math.sin(f * 0.05) * 0.04; currentScaleY *= 1 + Math.sin(f * 0.05) * 0.04; break;
-        case 'sacudir': currentRotation += (Math.random()-0.5)*0.3; modState.offsetX += (Math.random()-0.5)*15; modState.offsetY += (Math.random()-0.5)*15; break;
-        case 'balanceo': currentRotation += Math.sin(f * 0.05) * 0.3; break;
+    void main() {
+        vec2 uv = v_texCoord;
+        
+        if (u_distortion > 0.0) {
+            uv.x += sin(uv.y * 10.0 + u_time) * u_distortion * 0.01;
+            uv.y += cos(uv.x * 10.0 + u_time) * u_distortion * 0.01;
+        }
+
+        float ab = u_aberration * 0.005;
+        vec4 cr = texture2D(u_image, uv + vec2(ab, 0.0));
+        vec4 cg = texture2D(u_image, uv);
+        vec4 cb = texture2D(u_image, uv - vec2(ab, 0.0));
+        vec4 color = vec4(cr.r, cg.g, cb.b, cg.a);
+
+        if (u_bloom > 0.0) {
+            vec4 b1 = texture2D(u_image, uv + vec2(0.004, 0.004));
+            vec4 b2 = texture2D(u_image, uv - vec2(0.004, 0.004));
+            vec4 b3 = texture2D(u_image, uv + vec2(-0.004, 0.004));
+            vec4 b4 = texture2D(u_image, uv + vec2(0.004, -0.004));
+            vec4 sum = (b1 + b2 + b3 + b4) * 0.25;
+            float lum = dot(sum.rgb, vec3(0.299, 0.587, 0.114));
+            if(lum > 0.5) color += sum * u_bloom;
+        }
+
+        gl_FragColor = color;
+    }
+`;
+
+function createShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    return shader;
+}
+
+let gl, program, positionLocation, texCoordLocation, tex, uTime, uAberration, uDistortion, uBloom;
+
+function initWebGL(canvas) {
+    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if(!gl) return false;
+    
+    const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    positionLocation = gl.getAttribLocation(program, "a_position");
+    texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
+
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+    const texCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,0, 1,0, 0,1, 0,1, 1,0, 1,1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(texCoordLocation);
+    gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+
+    tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+    uTime = gl.getUniformLocation(program, "u_time");
+    uAberration = gl.getUniformLocation(program, "u_aberration");
+    uDistortion = gl.getUniformLocation(program, "u_distortion");
+    uBloom = gl.getUniformLocation(program, "u_bloom");
+    
+    return true;
+}
+
+let frame = 0;
+let ripples = [];
+
+const drawProceduralBG = (ctx, w, h, type, f, mx, my) => {
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(0, 0, w, h);
+    
+    if (type === 'grid') {
+        ctx.strokeStyle = '#0f0'; ctx.lineWidth = 1; ctx.globalAlpha = 0.2;
+        const offX = (mx * 0.1) % 40; const offY = (my * 0.1) % 40;
+        for(let i=0; i<w; i+=40) { ctx.beginPath(); ctx.moveTo(i-offX, 0); ctx.lineTo(i-offX, h); ctx.stroke(); }
+        for(let j=0; j<h; j+=40) { ctx.beginPath(); ctx.moveTo(0, j-offY); ctx.lineTo(w, j-offY); ctx.stroke(); }
+        ctx.globalAlpha = 1;
+    } else if (type === 'void') {
+        const rad = ctx.createRadialGradient(w/2 - mx*0.1, h/2 - my*0.1, 0, w/2, h/2, w);
+        rad.addColorStop(0, '#200'); rad.addColorStop(1, '#000');
+        ctx.fillStyle = rad; ctx.fillRect(0,0,w,h);
     }
 };
 
-export const startRenderLoop = (canvas, ctx, getMouseData) => {
+export const startRenderLoop = (srcCanvas, srcCtx, webglCanvas, getMouseData) => {
+    const webglSupported = initWebGL(webglCanvas);
+    
+    if (!webglSupported) {
+        webglCanvas.style.display = 'none';
+        srcCanvas.style.display = 'block';
+        console.warn("SOMA: Contexto WebGL inaccesible. Modo de renderizado 2D de respaldo activado.");
+    }
+
     function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        document.body.style.backgroundColor = state.bgColor;
-        
-        // Composición de filtros (permitiendo aberración sobre base)
-        let baseFilter = state.filter;
-        if(state.anim === 'drift') baseFilter += ' drop-shadow(-30px 0px 10px rgba(255,255,255,0.3)) blur(2px)';
-        if(state.aberration > 0) baseFilter += ` drop-shadow(${state.aberration}px 0 0 rgba(255,0,0,0.5)) drop-shadow(-${state.aberration}px 0 0 rgba(0,0,255,0.5))`;
-        canvas.style.filter = baseFilter;
-
         if (!allLoaded) { requestAnimationFrame(render); return; }
+        
+        state.scaleX = lerp(state.scaleX, target.scaleX, 0.1);
+        state.scaleY = lerp(state.scaleY, target.scaleY, 0.1);
+        state.rotation = lerp(state.rotation, target.rotation, 0.1);
+        state.alpha = lerp(state.alpha, target.alpha, 0.1);
+        state.aberration = lerp(state.aberration, target.aberration, 0.1);
+        state.distortion = lerp(state.distortion, target.distortion, 0.1);
+        state.bloom = lerp(state.bloom, target.bloom, 0.1);
 
-        const currentImg = images[state.pose] || images['subject'];
         const mouseData = getMouseData();
+        
+        if (state.physicsEnabled && !physics.isDragging) {
+            physics.vy += 0.8;
+            target.offsetY += physics.vy;
+            target.offsetX += physics.vx;
+            const ground = (srcCanvas.height/2) - (200 * state.scaleY);
+            if (target.offsetY > ground) {
+                target.offsetY = ground; physics.vy *= -0.6; physics.vx *= 0.9;
+            }
+        }
+        
+        state.offsetX = lerp(state.offsetX, target.offsetX, state.physicsEnabled ? 1 : 0.1);
+        state.offsetY = lerp(state.offsetY, target.offsetY, state.physicsEnabled ? 1 : 0.1);
+
+        let mRot = state.rotation, mOx = state.offsetX, mOy = state.offsetY, mSx = state.scaleX, mSy = state.scaleY;
+        switch (state.anim) {
+            case 'flotar': mOy += Math.sin(frame * 0.05) * 40; mRot += Math.sin(frame * 0.02) * 0.05; break;
+            case 'latido': const s = 1 + Math.sin(frame * 0.2) * 0.1; mSx *= s; mSy *= s; break;
+            case 'caos': mOx += (Math.random()-0.5)*20; mOy += (Math.random()-0.5)*20; mRot += (Math.random()-0.5)*0.1; break;
+            case 'terremoto': mOx += (Math.random()-0.5)*45; mOy += (Math.random()-0.5)*45; break;
+            case 'glitch': if(Math.random()>0.8) { mOx += (Math.random()-0.5)*100; mSy *= 1.2; } break;
+            case 'drift': mOx += Math.sin(frame*0.5)*20; break;
+            case 'reloj': mRot += frame*0.05; break;
+            case 'tornado': mRot += frame*0.4; mSx = 1 + Math.sin(frame*0.1)*0.8; break;
+            case 'gelatina': mSx *= 1 + Math.sin(frame*0.2)*0.2; mSy *= 1 + Math.cos(frame*0.2)*0.2; break;
+            case 'vibracion': mOx += (Math.random()-0.5)*8; mOy += (Math.random()-0.5)*8; break;
+            case 'magnetico': mOx += (mouseData.x - srcCanvas.width/2)*0.15; mOy += (mouseData.y - srcCanvas.height/2)*0.15; break;
+            case 'repeler': mOx -= (mouseData.x - srcCanvas.width/2)*0.15; mOy -= (mouseData.y - srcCanvas.height/2)*0.15; break;
+            case 'rebote': mOy += Math.abs(Math.sin(frame * 0.15)) * -80; break;
+            case 'respirar': mSx *= 1 + Math.sin(frame * 0.05) * 0.04; mSy *= 1 + Math.sin(frame * 0.05) * 0.04; break;
+            case 'sacudir': mRot += (Math.random()-0.5)*0.3; mOx += (Math.random()-0.5)*15; mOy += (Math.random()-0.5)*15; break;
+            case 'balanceo': mRot += Math.sin(frame * 0.05) * 0.3; break;
+        }
+
+        srcCtx.clearRect(0, 0, srcCanvas.width, srcCanvas.height);
+        
+        if (!webglSupported) {
+            document.body.style.backgroundColor = state.bgColor;
+            srcCanvas.style.filter = state.filter;
+        }
+
+        drawProceduralBG(srcCtx, srcCanvas.width, srcCanvas.height, state.bgLayer, frame, mouseData.x, mouseData.y);
+
+        const currentImg = images[state.pose] && images[state.pose].complete && images[state.pose].naturalWidth !== 0 ? images[state.pose] : images['subject'];
         const aspect = currentImg.width / currentImg.height;
-        
-        // Transiciones no lineales (Easing)
-        currentScaleX = lerp(currentScaleX, state.targetScaleX, 0.1);
-        currentScaleY = lerp(currentScaleY, state.targetScaleY, 0.1);
-        currentRotation = lerp(currentRotation, state.targetRotation, 0.1);
+        let h = 450; let w = h * aspect;
 
-        // Físicas
-        if (state.physicsEnabled && !state.isDragging) {
-            state.vy += 0.8; // Gravedad
-            state.offsetY += state.vy;
-            state.offsetX += state.vx;
-            // Suelo de rebote
-            const ground = (canvas.height/2) - (200 * state.scale);
-            if (state.offsetY > ground) {
-                state.offsetY = ground;
-                state.vy *= -0.6; // Amortiguación
-                state.vx *= 0.9; // Fricción
-            }
+        if (state.envParticles === 'lluvia') { srcCtx.fillStyle = 'rgba(150, 200, 255, 0.6)'; for(let i=0; i<120; i++) srcCtx.fillRect(Math.random()*srcCanvas.width, (frame*30 + i*30)%srcCanvas.height, 2, 25); }
+        else if (state.envParticles === 'nieve') { srcCtx.fillStyle = 'rgba(255, 255, 255, 0.8)'; for(let i=0; i<100; i++) { srcCtx.beginPath(); srcCtx.arc((i*40 + Math.sin(frame*0.02 + i)*40)%srcCanvas.width, (frame*4 + i*50)%srcCanvas.height, Math.random()*4+1, 0, Math.PI*2); srcCtx.fill(); } }
+        else if (state.envParticles === 'datos') { srcCtx.fillStyle = '#0f0'; srcCtx.font = '16px monospace'; for(let i=0; i<80; i++) srcCtx.fillText(Math.random()>0.5?'1':'0', (i*20)%srcCanvas.width, (frame*15 + i*40)%srcCanvas.height); }
+        else if (state.envParticles === 'hojas') { srcCtx.fillStyle = '#8a3'; for(let i=0; i<40; i++) { srcCtx.beginPath(); srcCtx.ellipse((frame*3 + i*60)%srcCanvas.width, (frame*4 + i*50)%srcCanvas.height, 10, 5, frame*0.1 + i, 0, Math.PI*2); srcCtx.fill(); } }
+        else if (state.envParticles === 'estrellas') { srcCtx.fillStyle = '#fff'; for(let i=0; i<200; i++) { if(Math.random()>0.9) srcCtx.fillRect((i*19)%srcCanvas.width, (i*27)%srcCanvas.height, Math.random()*3, Math.random()*3); } }
+
+        if(state.interactive && mouseData.clicked) { ripples.push({x: mouseData.x, y: mouseData.y, r: 0, a: 1}); mouseData.clicked = false; }
+        for(let i=ripples.length-1; i>=0; i--) {
+            let r = ripples[i]; srcCtx.strokeStyle = `rgba(0,255,0,${r.a})`; srcCtx.lineWidth = 3;
+            srcCtx.beginPath(); srcCtx.arc(r.x, r.y, r.r, 0, Math.PI*2); srcCtx.stroke();
+            r.r += 15; r.a -= 0.03; if(r.a <= 0) ripples.splice(i, 1);
         }
 
-        let modState = { 
-            offsetX: state.offsetX, offsetY: state.offsetY, anim: state.anim 
-        };
-        
-        applyAnimModifiers(modState, frame, mouseData.x, mouseData.y, canvas.width, canvas.height);
+        const drawSubject = (drawX, drawY) => {
+            srcCtx.save();
+            srcCtx.translate(srcCanvas.width/2 + mOx, srcCanvas.height/2 + mOy);
+            srcCtx.rotate(mRot); srcCtx.scale(mSx, mSy);
+            srcCtx.translate(-(srcCanvas.width/2 + mOx), -(srcCanvas.height/2 + mOy));
 
-        let h = 450 * state.scale;
-        let w = h * aspect;
+            if(state.shadowColor !== 'transparent') { srcCtx.shadowBlur = 50; srcCtx.shadowColor = state.shadowColor; }
+            srcCtx.globalAlpha = state.alpha;
 
-        // Entorno Parallax multicapa
-        if (state.parallaxIntensity > 0) {
-            const px = (mouseData.x - canvas.width/2) * state.parallaxIntensity;
-            const py = (mouseData.y - canvas.height/2) * state.parallaxIntensity;
+            if (state.overlay !== 'none') { srcCtx.fillStyle = state.overlay; srcCtx.fillRect(drawX, drawY, w, h); }
+            srcCtx.drawImage(currentImg, drawX, drawY, w, h);
+            srcCtx.shadowBlur = 0;
+
+            if (state.particles === 'fuego') { for(let i=0; i<50; i++) { srcCtx.fillStyle = `rgba(255, ${Math.random()*150}, 0, 0.8)`; srcCtx.beginPath(); srcCtx.arc(drawX + Math.random()*w, drawY + h - (frame*7 + i*18)%h, Math.random()*14, 0, Math.PI*2); srcCtx.fill(); } }
+            else if (state.particles === 'rayos') { srcCtx.strokeStyle = '#fff'; srcCtx.lineWidth = 3; if(Math.random()>0.6) { srcCtx.beginPath(); srcCtx.moveTo(drawX + Math.random()*w, drawY); srcCtx.lineTo(drawX + Math.random()*w, drawY + h/2); srcCtx.lineTo(drawX + Math.random()*w, drawY + h); srcCtx.stroke(); } }
             
-            ctx.fillStyle = 'rgba(20, 20, 30, 0.5)';
-            ctx.fillRect(px * 0.2, py * 0.2, canvas.width, canvas.height);
-            
-            ctx.strokeStyle = 'rgba(0, 255, 0, 0.1)';
-            ctx.lineWidth = 1;
-            for(let i=0; i<canvas.width; i+=40) {
-                ctx.beginPath(); ctx.moveTo(i + px*0.5, 0); ctx.lineTo(i + px*0.5, canvas.height); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i + py*0.5); ctx.lineTo(canvas.width, i + py*0.5); ctx.stroke();
-            }
-        }
-
-        if (state.anim === 'flotar' || state.anim === 'gravedad0' || state.anim === 'abduccion') {
-            ctx.fillStyle = `rgba(0,0,0,${Math.max(0.1, 0.6 - (modState.offsetY/150))})`;
-            ctx.beginPath(); ctx.ellipse(canvas.width/2, canvas.height/2 + h/2 + 40, w/1.5, 15, 0, 0, Math.PI*2); ctx.fill();
-        }
-
-        (envRenderers[state.envParticles] || envRenderers['none'])(ctx, canvas.width, canvas.height, frame);
-
-        if(state.interactive && state.ripples.length > 0) {
-            for(let i=state.ripples.length-1; i>=0; i--) {
-                let r = state.ripples[i];
-                ctx.strokeStyle = `rgba(0, 255, 0, ${r.alpha})`; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.arc(r.x, r.y, r.radius, 0, Math.PI*2); ctx.stroke();
-                r.radius += 15; r.alpha -= 0.03;
-                if(r.alpha <= 0) state.ripples.splice(i, 1);
-            }
-        }
-
-        const drawSubject = (drawX, drawY, drawW, drawH, overrideAlpha = null) => {
-            ctx.save();
-            ctx.translate(canvas.width/2 + modState.offsetX, canvas.height/2 + modState.offsetY);
-            ctx.rotate(currentRotation);
-            ctx.scale(currentScaleX, currentScaleY);
-            ctx.translate(-(canvas.width/2 + modState.offsetX), -(canvas.height/2 + modState.offsetY));
-
-            if(state.shadowColor !== 'transparent') { ctx.shadowBlur = 50; ctx.shadowColor = state.shadowColor; }
-
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = overrideAlpha !== null ? overrideAlpha : state.alpha;
-            
-            if (state.anim === 'glitch_severo') {
-                ctx.globalAlpha = 0.5; ctx.filter = 'hue-rotate(90deg)';
-                ctx.drawImage(currentImg, drawX - 15, drawY, drawW, drawH);
-                ctx.filter = 'hue-rotate(270deg)';
-                ctx.drawImage(currentImg, drawX + 15, drawY, drawW, drawH);
-                ctx.filter = 'none';
-            }
-            
-            ctx.drawImage(currentImg, drawX, drawY, drawW, drawH);
-            ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'source-atop';
-            if (state.overlay !== 'none') { ctx.fillStyle = state.overlay; ctx.fillRect(drawX, drawY, drawW, drawH); }
-
-            (particleRenderers[state.particles] || particleRenderers['none'])(ctx, drawX, drawY, drawW, drawH, frame);
-
-            ctx.restore();
+            srcCtx.restore();
         };
 
-        ctx.globalCompositeOperation = 'source-over';
-        const mainX = (canvas.width - w) / 2;
-        const mainY = (canvas.height - h) / 2;
-
-        if (state.anim === 'eco') {
-            drawSubject(mainX - 50, mainY, w, h, 0.2);
-            drawSubject(mainX + 50, mainY, w, h, 0.2);
+        const mainX = (srcCanvas.width - w) / 2;
+        const mainY = (srcCanvas.height - h) / 2;
+        
+        if (state.clones > 0) {
+            drawSubject(mainX - 250, mainY); drawSubject(mainX + 250, mainY);
         }
+        drawSubject(mainX, mainY);
 
-        if(state.clones > 0) {
-            for(let i=0; i<state.clones; i++) {
-                const sep = 250 * (i+1);
-                drawSubject(mainX - sep, mainY, w * 0.8, h * 0.8);
-                drawSubject(mainX + sep, mainY, w * 0.8, h * 0.8);
-            }
+        if(webglSupported && gl) {
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas);
+            
+            gl.uniform1f(uTime, frame * 0.05);
+            gl.uniform1f(uAberration, state.aberration);
+            gl.uniform1f(uDistortion, state.distortion);
+            gl.uniform1f(uBloom, state.bloom);
+            
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
         }
-        drawSubject(mainX, mainY, w, h);
 
         frame++;
         requestAnimationFrame(render);
