@@ -1,11 +1,27 @@
+export type PoseType = 
+    | 'subject' | 'cry' | 'fight' | 'happy' | 'lying' | 'running' | 'secret' | 'squat' | 'worried'
+    | 'collapsed' | 'disjointed' | 'falling' | 'meditating' | 'overload' | 'protection' | 'sit' | 'pose';
+
+export type AnimType = 
+    | 'none' | 'flotar' | 'latido' | 'caos' | 'terremoto' | 'glitch' | 'drift' | 'reloj' 
+    | 'tornado' | 'gelatina' | 'vibracion' | 'magnetico' | 'repeler' | 'rebote' | 'respirar' 
+    | 'sacudir' | 'balanceo';
+
+export type ParticleType = 'none' | 'fuego' | 'rayos' | 'humo' | 'chispas' | 'burbujas' | 'magia';
+export type EnvParticleType = 'none' | 'lluvia' | 'nieve' | 'hojas' | 'datos' | 'estrellas' | 'ceniza' | 'petalos';
+export type BgLayerType = 'none' | 'grid' | 'void';
+export type EscenarioType = 
+    | 'ninguno' | 'ciudad' | 'bosque' | 'playa' | 'espacio' | 'dojo' | 'laboratorio' 
+    | 'templo' | 'submarino' | 'volcan' | 'nieve';
+
 export interface Pose {
-    pose: string;
+    pose: PoseType;
     overlay: string;
     bgColor: string;
-    particles: string;
-    envParticles: string;
-    anim: string;
-    bgLayer: string;
+    particles: ParticleType;
+    envParticles: EnvParticleType;
+    anim: AnimType;
+    bgLayer: BgLayerType;
     scaleX: number;
     scaleY: number;
     rotation: number;
@@ -21,7 +37,7 @@ export interface Pose {
     interactive: boolean;
     filter?: string;
     tint?: string;
-    escenario?: string;
+    escenario?: EscenarioType;
 }
 
 export interface Physics {
