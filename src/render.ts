@@ -436,6 +436,49 @@ export const startRenderLoop = (
         }
         drawSubject(mainX, mainY);
 
+        // --- UI OVERLAY (STATS) - Drawn on srcCtx before WebGL copy ---
+        const drawBar = (label: string, value: number, y: number, color: string) => {
+            const bx = srcCanvas.width - 220;
+            const bw = 200;
+            const bh = 10;
+            
+            // Label
+            srcCtx.fillStyle = '#fff';
+            srcCtx.font = 'bold 9px monospace';
+            srcCtx.textAlign = 'right';
+            srcCtx.fillText(label, bx - 8, y + 8);
+            srcCtx.textAlign = 'left';
+
+            // Background trace
+            srcCtx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            srcCtx.fillRect(bx, y, bw, bh);
+
+            // Segments
+            const segments = 20;
+            const segW = (bw / segments) - 2;
+            const filledSegments = Math.ceil((value / 100) * segments);
+
+            for (let i = 0; i < segments; i++) {
+                if (i < filledSegments) {
+                    srcCtx.fillStyle = color;
+                    // Add subtle glow to filled segments
+                    srcCtx.shadowBlur = 5;
+                    srcCtx.shadowColor = color;
+                } else {
+                    srcCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                    srcCtx.shadowBlur = 0;
+                }
+                srcCtx.fillRect(bx + i * (segW + 2), y, segW, bh);
+            }
+            srcCtx.shadowBlur = 0;
+        };
+
+        if (state.stats) {
+            drawBar("HAMBRE", state.stats.hunger, 20, state.stats.hunger < 30 ? '#ff4444' : '#00ff88');
+            drawBar("ENERGIA", state.stats.energy, 35, state.stats.energy < 30 ? '#ffff44' : '#4488ff');
+            drawBar("FELICIDAD", state.stats.happiness, 50, state.stats.happiness < 30 ? '#888888' : '#ff00ff');
+        }
+
         if (webglSupported && glContext) {
             const { gl, tex, locations } = glContext;
             gl.bindTexture(gl.TEXTURE_2D, tex);

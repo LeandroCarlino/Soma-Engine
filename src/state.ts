@@ -1,9 +1,14 @@
 import { Sfx } from './audio';
-import type { Pose, Physics } from './types';
+import type { Pose, Physics, Stats } from './types';
 
 export const discoveredWords = new Set<string>(JSON.parse(localStorage.getItem('soma_words') || '[]'));
 export const discoveredCombos = new Set<string>(JSON.parse(localStorage.getItem('soma_combos') || '[]'));
 export let nsfwInterval: ReturnType<typeof setInterval> | null = null;
+
+// --- UTILS ---
+export const normalizeText = (text: string): string => {
+    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+};
 
 export const saveDiscovery = (word: string, isCombo: boolean = false): void => {
     if (isCombo) {
@@ -41,10 +46,54 @@ export const defaults: Pose = {
     escenario: 'ninguno'
 };
 
-export const state: Pose = { ...defaults };
+// --- TAMAGOTCHI LOGIC ---
+const loadStats = (): Stats => {
+    const saved = localStorage.getItem('soma_stats');
+    return saved ? JSON.parse(saved) : { energy: 100, hunger: 100, happiness: 100 };
+};
+
+export const state: Pose & { stats: Stats } = { ...defaults, stats: loadStats() };
 export const target: Pose = { ...defaults };
 export const physics: Physics = { vx: 0, vy: 0, isDragging: false };
 export const activeTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+// Bucle de vida (Decay)
+setInterval(() => {
+    // Decaimiento
+    state.stats.hunger = Math.max(0, state.stats.hunger - 0.05); // Baja lento
+    state.stats.energy = Math.max(0, state.stats.energy - 0.03);
+    state.stats.happiness = Math.max(0, state.stats.happiness - 0.04);
+    
+    localStorage.setItem('soma_stats', JSON.stringify(state.stats));
+
+    // Estados automáticos si no hay comando activo (Prioridad inversa)
+    if (Object.keys(activeTimers).length === 0) {
+        if (state.stats.energy < 10) {
+            target.pose = 'lying'; // Desmayada
+            target.filter = 'grayscale(0.8)';
+        } else if (state.stats.hunger < 20) {
+            target.pose = 'squat'; // Dolor de panza
+            target.anim = 'vibracion';
+        } else if (state.stats.happiness < 20) {
+            target.pose = 'cry'; // Deprimida
+            target.envParticles = 'lluvia';
+        } else if (state.stats.energy < 30) {
+            target.pose = 'sit'; // Cansada
+        } else {
+            // Estado normal si todo está bien y no hay animaciones
+            if (target.pose === 'lying' || target.pose === 'cry' || target.pose === 'squat') {
+                target.pose = 'subject';
+                target.filter = '';
+                target.anim = 'none';
+                target.envParticles = 'none';
+            }
+        }
+    }
+}, 1000);
+
+export const updateStat = (stat: keyof Stats, amount: number) => {
+    state.stats[stat] = Math.min(100, Math.max(0, state.stats[stat] + amount));
+};
 
 export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, dur: number = 5000): void => {
     logEl.innerText = msg;
@@ -53,6 +102,7 @@ export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, 
     if (activeTimers['wording']) clearTimeout(activeTimers['wording']);
     activeTimers['wording'] = setTimeout(() => {
         logEl.innerText = "SOMA: Entorno estabilizado.";
+        delete activeTimers['wording'];
     }, dur);
 
     for (const key in mod) {
@@ -71,6 +121,7 @@ export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, 
                 } else {
                     (state as unknown as Record<string, unknown>)[k] = defaults[k];
                 }
+                delete activeTimers[k];
             }, dur);
         }
     }

@@ -14,6 +14,12 @@ export type EscenarioType =
     | 'ninguno' | 'ciudad' | 'bosque' | 'playa' | 'espacio' | 'dojo' | 'laboratorio' 
     | 'templo' | 'submarino' | 'volcan' | 'nieve';
 
+export interface Stats {
+    energy: number;   // 0-100 (Baja con el tiempo)
+    hunger: number;   // 0-100 (Baja con el tiempo)
+    happiness: number;// 0-100 (Baja si no interactúas)
+}
+
 export interface Pose {
     pose: PoseType;
     overlay: string;

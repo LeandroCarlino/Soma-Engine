@@ -1,7 +1,7 @@
 import { Sfx } from './audio';
 import { startRenderLoop, loadImages } from './render';
 import { getCmds, checkCombos } from './diccionario';
-import { state, physics, target, discoveredWords, discoveredCombos, saveDiscovery } from './state';
+import { state, physics, target, discoveredWords, discoveredCombos, saveDiscovery, normalizeText } from './state';
 import type { MouseData } from './types';
 
 const srcCanvas = document.getElementById('srcCanvas') as HTMLCanvasElement;
@@ -26,7 +26,17 @@ const tutorialTips = [
     { cmd: 'gravedad', tip: '"gravedad" activa el motor físico. ¡Arrastra al personaje!' },
     { cmd: 'amor', tip: '"amor" activa un latido de corazón' },
     { cmd: 'cyberpunk', tip: '"cyberpunk" transforma todo en estética futurista de neón' },
-    { cmd: 'pikachu', tip: '¿Sabías que "pikachu" genera electricidad visual?' },
+    { cmd: 'comer', tip: '¡SOMA tiene hambre! Usa "comer" o "alimentar" para subir su barra de HAMBRE' },
+    { cmd: 'dormir', tip: 'Si la barra de ENERGIA está baja, usa "dormir" o "descansar"' },
+    { cmd: 'jugar', tip: 'Sube su ANIMO usando "jugar" o dándole una "caricia"' },
+    { cmd: 'galaxia', tip: '¿Has probado viajar a una "galaxia" lejana?' },
+    { cmd: 'ia', tip: '"ia" muestra los procesos de pensamiento del núcleo' },
+    { cmd: 'hadas', tip: 'Invocas pequeñas "hadas" para alegrar el ambiente' },
+    { cmd: 'cafe', tip: 'El "cafe" da un impulso rápido de ENERGIA pero cuidado con los nervios' },
+    { cmd: 'retro', tip: 'Vuelve a los años 90 con el comando "retro"' },
+    { cmd: 'lluvia triste', tip: 'Sinergia: Prueba combinar "lluvia" y "triste"' },
+    { cmd: 'sol luna', tip: 'Sinergia: ¿Qué pasa si el "sol" y la "luna" se encuentran?' },
+    { cmd: 'cafe programar', tip: 'Sinergia: Activa el "Developer Mode" con "cafe" y "programar"' },
 ];
 
 let tipIndex = 0;
@@ -185,9 +195,11 @@ input.addEventListener('keydown', (e) => {
     }
     
     if (e.key === 'Enter') {
-        const val = input.value.toLowerCase().trim();
-        if (val !== '') {
-            commandHistory.unshift(val);
+        const rawVal = input.value.trim();
+        const val = normalizeText(rawVal); // Normaliza acentos y minusculas
+        
+        if (rawVal !== '') {
+            commandHistory.unshift(rawVal);
             if (commandHistory.length > 50) commandHistory.pop();
             historyIndex = -1;
         }
