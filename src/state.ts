@@ -36,7 +36,9 @@ export const defaults: Pose = {
     clones: 0,
     shadowColor: 'transparent',
     interactive: false,
-    filter: ''
+    filter: '',
+    tint: 'none',
+    escenario: 'ninguno'
 };
 
 export const state: Pose = { ...defaults };

@@ -1,42 +1,72 @@
 # Soma Engine
 
-Un simulador interactivo donde puedes manipular a un personaje a través de comandos de texto. Es como jugar con un muñeco digital que reacciona a lo que le dices.
+Simulador interactivo de estados mentales y emocionales con aceleración WebGL.
 
-## Idea
+## Características
 
-Hikaru es un ser sintético que vive en tu pantalla. Cada comando que escribes altera su estado: su pose, los efectos visuales a su alrededor, los sonidos del ambiente, incluso su comportamiento físico. Es una herramienta de experimentación visual y sonora, medio juguete medio instrumento.
+- **+200 comandos de texto** en español
+- **10 escenarios procedurales** (ciudad, bosque, playa, espacio, dojo, etc.)
+- **Efectos de post-procesado** (bloom, aberración cromática, distorsión, scanlines)
+- **Sistema de sinergias** - combina palabras para efectos especiales
+- **Partículas ambientales** (lluvia, nieve, hojas, estrellas, datos)
+- **Emotes animados** que responden al estado emocional
+- **Física básica** con gravedad y rebotes
+- **Audio procedural** generado con Web Audio API
 
-## Cómo funciona
+## Demo
 
-1. **Comandos de texto**: Escribe frases simples en el cuadro de texto. El motor busca palabras clave y activa cambios.
-2. **Poses**: Hikaru puede adoptar diferentes posturas (sentado, corriendo, worried, etc.)
-3. **Efectos visuales**: Aberración cromática, distorsión, bloom, sombras de colores.
-4. **Animaciones**: Flotar, latido, caos, terremoto, glitch, tornado, y más.
-5. **Partículas**: Fuego, rayos, lluvia, nieve, hojas, estrellas.
-6. **Sonido procedural**: El ambiente genera sonidos en tiempo real (viento, fuego, latidos, lluvia).
-7. **Física básica**: Si activas el modo físico, Hikaru cae, rebota y se desliza.
+[sitio web en producción]
 
-## Controles principales
-
-- Escribe poses: `sentado`, `caido`, `lucha`, `corriendo`, etc.
-- Escribe efectos: `glitch`, `terremoto`, `caos`
-- Escribe `física` para activar gravedad
-- Escribe `fuego` o `lluvia` para efectos de partículas
-- Usa los controles del panel para ajustar parámetros en tiempo real
-
-## Tecnologías
-
-- HTML5 Canvas + WebGL (con fallback 2D automático)
-- Audio Web API para síntesis de sonido en tiempo real
-- Shaders GLSL para post-procesado
-- TypeScript
-- Vite
-
-## Inicio rápido
+## Instalación
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abre la URL que aparece en consola y empieza a escribir comandos.
+## Comandos populares
+
+| Comando | Efecto |
+|---------|--------|
+| `feliz` | Alegría con rebote |
+| `amor` | Estado romántico con latido |
+| `demonio` | Aura roja con partículas de fuego |
+| `espacio` | Cambio a escenario espacial |
+| `ciudad` | Cambio a escenario urbano |
+
+**Sinergias:** Combina palabras como `fuego` + `tornado`, `agua` + `electrico`, o `amor` + `feliz`.
+
+## Build para producción
+
+```bash
+npm run build
+```
+
+El output se genera en `dist/` y está listo para deploy en Vercel.
+
+## Tech Stack
+
+- TypeScript
+- Vite
+- WebGL / Canvas 2D
+- Web Audio API
+- CSS con clamp() para responsividad
+
+## Estructura del proyecto
+
+```
+├── src/
+│   ├── main.ts      # Entry point
+│   ├── render.ts    # Motor de renderizado
+│   ├── diccionario.ts  # Comandos y sinergias
+│   ├── state.ts     # Estado global
+│   ├── audio.ts     # Sonidos procedurales
+│   └── types.ts     # Tipos TypeScript
+├── public/Hikaru/  # Sprites del personaje
+├── style.css        # Estilos
+└── index.html       # Entry HTML
+```
+
+## License
+
+MIT

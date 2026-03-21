@@ -1,1 +1,27 @@
-.vite
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Vite
+.vite/
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo

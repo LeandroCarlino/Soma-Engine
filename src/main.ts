@@ -9,7 +9,6 @@ const srcCtx = srcCanvas.getContext('2d') as CanvasRenderingContext2D;
 const gameCanvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
 const input = document.getElementById('cmd') as HTMLInputElement;
 const log = document.getElementById('log') as HTMLElement;
-const gamepadStatus = document.getElementById('gamepad-status') as HTMLElement;
 const tipElement = document.getElementById('tip-container') as HTMLElement;
 
 const tutorialTips = [
@@ -62,16 +61,6 @@ const showNextTip = (): void => {
 };
 
 const getMouseData = (): MouseData => {
-    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    if (gamepads[0]) {
-        gamepadStatus.innerText = "Gamepad: Conectado";
-        const gp = gamepads[0] as Gamepad;
-        if (Math.abs(gp.axes[0]) > 0.1) mouseX += gp.axes[0] * 10;
-        if (Math.abs(gp.axes[1]) > 0.1) mouseY += gp.axes[1] * 10;
-        if (gp.buttons[0].pressed && target.interactive) return { x: mouseX, y: mouseY, clicked: true };
-    } else {
-        gamepadStatus.innerText = "Gamepad: Desconectado";
-    }
     return { x: mouseX, y: mouseY, clicked: false };
 };
 

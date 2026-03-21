@@ -20,6 +20,8 @@ export interface Pose {
     shadowColor: string;
     interactive: boolean;
     filter?: string;
+    tint?: string;
+    escenario?: string;
 }
 
 export interface Physics {

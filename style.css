@@ -56,6 +56,9 @@ input {
 .modal-box p { margin: 0 0 15px 0; line-height: 1.6; color: #ccc; font-size: clamp(0.9rem, 2.5vw, 1.1rem); }
 .title-warning { color: #f00; font-weight: bold; font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: 3px; }
 .stats { color: #0ff !important; font-weight: bold; font-size: clamp(1rem, 2.5vw, 1.2rem) !important; }
+.credits { color: #888 !important; font-size: clamp(0.8rem, 2vw, 1rem) !important; }
+.credits a { color: #0af; text-decoration: none; }
+.credits a:hover { text-decoration: underline; }
 hr { border: 0; border-top: 1px solid #222; margin: 15px 0; }
 button {
     background: transparent; border: 1px solid #0f0; color: #0f0;
