@@ -13,12 +13,190 @@ const poses: string[] = [
 export let allLoaded = false;
 export const resourcesLoaded = { images: 0, total: poses.length };
 
+// --- Spritesheet System ---
+// Configure frame counts manually here. Set to 0 for auto-detect.
+const spriteConfig: Record<string, number> = {
+    'subject': 24,    // 0 = auto-detect, or set e.g. 4, 8, 12
+    'cry': 0,
+    'fight': 0,
+    'happy': 0,
+    'lying': 0,
+    'running': 0,
+    'secret': 0,
+    'squat': 0,
+    'worried': 0,
+    'collapsed': 0,
+    'disjointed': 0,
+    'falling': 0,
+    'meditating': 0,
+    'overload': 0,
+    'protection': 0,
+    'sit': 0,
+    'pose': 0
+};
+
+// Animation speed in ms per frame (lower = faster, higher = slower)
+const spriteSpeedConfig: Record<string, number> = {
+    'subject': 48,
+    'cry': 180,
+    'fight': 120,
+    'happy': 140,
+    'lying': 250,
+    'running': 80,
+    'secret': 200,
+    'squat': 200,
+    'worried': 180,
+    'collapsed': 300,
+    'disjointed': 90,
+    'falling': 100,
+    'meditating': 250,
+    'overload': 70,
+    'protection': 150,
+    'sit': 200,
+    'pose': 150
+};
+
+// Ping-pong: goes 0→max→0 instead of 0→max→0 jump
+const spritePingPongConfig: Record<string, boolean> = {
+    'subject': true,
+    'cry': true,
+    'fight': true,
+    'happy': true,
+    'lying': true,
+    'running': true,
+    'secret': true,
+    'squat': true,
+    'worried': true,
+    'collapsed': true,
+    'disjointed': true,
+    'falling': true,
+    'meditating': true,
+    'overload': true,
+    'protection': true,
+    'sit': true,
+    'pose': true
+};
+
+// --- Micro-Movement Config ---
+// Set to false to disable base breathing/idle or pose-specific movements
+const microMovementConfig = {
+    base: false,  // Breathing + weight shift + rotation
+    poses: {
+        'subject': false,
+        'meditating': true,
+        'fight': true,
+        'happy': true,
+        'cry': true,
+        'worried': true,
+        'sit': true,
+        'squat': true,
+        'lying': true,
+        'running': true,
+        'secret': true,
+        'falling': true,
+        'collapsed': true,
+        'protection': true,
+        'overload': true,
+        'disjointed': true,
+        'pose': true
+    } as Record<string, boolean>
+};
+
+interface SpriteData {
+    isSpriteSheet: boolean;
+    frames: HTMLCanvasElement[];
+    frameCount: number;
+    currentFrame: number;
+    frameTimer: number;
+    frameSpeed: number;
+    pingPong: boolean;
+    direction: number; // 1 = forward, -1 = backward
+}
+
+const spriteCache: Record<string, SpriteData> = {};
+
+const detectAndSliceSpriteSheet = (img: HTMLImageElement, poseName: string, forcedFrameCount?: number): SpriteData => {
+    const data: SpriteData = {
+        isSpriteSheet: false,
+        frames: [],
+        frameCount: 1,
+        currentFrame: 0,
+        frameTimer: 0,
+        frameSpeed: 150,
+        pingPong: true,
+        direction: 1
+    };
+
+    let frameCount = forcedFrameCount || 0;
+
+    // Auto-detect if no forced count
+    if (!frameCount) {
+        const ratio = img.width / img.height;
+        if (ratio >= 1.8 && ratio <= 16) {
+            frameCount = Math.round(ratio);
+        }
+    }
+
+    if (frameCount >= 2 && frameCount <= 128) {
+        data.isSpriteSheet = true;
+        data.frameCount = frameCount;
+
+        const frameWidth = Math.floor(img.width / frameCount);
+        for (let i = 0; i < frameCount; i++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = frameWidth;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, i * frameWidth, 0, frameWidth, img.height, 0, 0, frameWidth, img.height);
+            }
+            data.frames.push(canvas);
+        }
+
+        data.frameSpeed = spriteSpeedConfig[poseName] || 150;
+        data.pingPong = spritePingPongConfig[poseName] || false;
+    }
+
+    return data;
+};
+
+const getCurrentFrame = (poseName: string, deltaTime: number): HTMLCanvasElement | HTMLImageElement => {
+    const img = images[poseName];
+    if (!img || !img.complete || img.naturalWidth === 0) {
+        return images['subject'] || img;
+    }
+    
+    const sprite = spriteCache[poseName];
+    if (!sprite || !sprite.isSpriteSheet) {
+        return img;
+    }
+    
+    // Advance animation
+    sprite.frameTimer += 16.67 * deltaTime;
+    if (sprite.frameTimer >= sprite.frameSpeed) {
+        sprite.frameTimer = 0;
+        
+        if (sprite.pingPong) {
+            sprite.currentFrame += sprite.direction;
+            if (sprite.currentFrame >= sprite.frameCount - 1) {
+                sprite.direction = -1;
+            } else if (sprite.currentFrame <= 0) {
+                sprite.direction = 1;
+            }
+        } else {
+            sprite.currentFrame = (sprite.currentFrame + 1) % sprite.frameCount;
+        }
+    }
+    
+    return sprite.frames[sprite.currentFrame];
+};
+
 // --- Optimization: Tint Cache ---
 let cachedTintCanvas: HTMLCanvasElement | null = null;
 let lastTint: string = 'none';
-let lastTintImage: HTMLImageElement | null = null;
+let lastTintImage: HTMLImageElement | HTMLCanvasElement | null = null;
 
-const getTintedImage = (img: HTMLImageElement, tint: string): HTMLCanvasElement | HTMLImageElement => {
+const getTintedImage = (img: HTMLImageElement | HTMLCanvasElement, tint: string): HTMLCanvasElement | HTMLImageElement => {
     if (tint === 'none' || !tint) return img;
 
     // Return cached version if valid
@@ -247,6 +425,101 @@ export const startRenderLoop = (
             mSx = state.scaleX,
             mSy = state.scaleY;
 
+        // --- BASE LIFE MICRO-MOVEMENTS ---
+        if (microMovementConfig.base) {
+            // Breathing: subtle vertical scale oscillation
+            const breatheY = Math.sin(frame * 0.04) * 0.018;
+            mSy *= 1 + breatheY;
+            mSx *= 1 - breatheY * 0.4;
+            
+            // Idle weight shift: subtle position drift
+            mOy += Math.sin(frame * 0.025) * 1.8;
+            mOx += Math.sin(frame * 0.018 + 2.1) * 1.2;
+            
+            // Very subtle rotation "aliveness"
+            mRot += Math.sin(frame * 0.015 + 1.5) * 0.008;
+        }
+
+        // --- POSE-SPECIFIC MICRO-MOVEMENTS ---
+        const poseMicroMovements: Record<string, () => void> = {
+            'subject': () => {
+                mOy += Math.sin(frame * 0.035) * 2.5;
+                mSx *= 1 + Math.sin(frame * 0.07) * 0.008;
+            },
+            'meditating': () => {
+                mOy += Math.sin(frame * 0.02) * 4;
+                mRot += Math.sin(frame * 0.012) * 0.015;
+                mSx *= 1 + Math.sin(frame * 0.025) * 0.012;
+                mSy *= 1 + Math.cos(frame * 0.025) * 0.012;
+            },
+            'fight': () => {
+                mOx += Math.sin(frame * 0.08) * 1.5;
+                mSx *= 1 + Math.sin(frame * 0.1) * 0.01;
+                mSy *= 1 + Math.cos(frame * 0.1) * 0.01;
+            },
+            'happy': () => {
+                mOy += Math.abs(Math.sin(frame * 0.06)) * -3;
+                mSx *= 1 + Math.sin(frame * 0.12) * 0.012;
+                mSy *= 1 + Math.sin(frame * 0.12) * 0.012;
+            },
+            'cry': () => {
+                mOx += Math.sin(frame * 0.1) * 0.8;
+                mOy += Math.sin(frame * 0.12) * 0.6;
+            },
+            'worried': () => {
+                mOx += Math.sin(frame * 0.09) * 1.2;
+                mRot += Math.sin(frame * 0.07) * 0.01;
+            },
+            'sit': () => {
+                mOy += Math.sin(frame * 0.025) * 1.5;
+                mRot += Math.sin(frame * 0.02) * 0.012;
+            },
+            'squat': () => {
+                mOy += Math.sin(frame * 0.04) * 1.2;
+                mSx *= 1 + Math.sin(frame * 0.08) * 0.006;
+            },
+            'lying': () => {
+                mOy += Math.sin(frame * 0.015) * 1;
+                mSx *= 1 + Math.sin(frame * 0.02) * 0.015;
+            },
+            'running': () => {
+                mOy += Math.abs(Math.sin(frame * 0.15)) * -5;
+                mRot += Math.sin(frame * 0.15) * 0.03;
+            },
+            'secret': () => {
+                mOx += Math.sin(frame * 0.03) * 2;
+                mRot += Math.sin(frame * 0.025) * 0.02;
+            },
+            'falling': () => {
+                mRot += Math.sin(frame * 0.05) * 0.04;
+                mOx += Math.sin(frame * 0.07) * 2;
+            },
+            'collapsed': () => {
+                mSy *= 1 + Math.sin(frame * 0.01) * 0.005;
+            },
+            'protection': () => {
+                mSx *= 1 + Math.sin(frame * 0.06) * 0.008;
+                mSy *= 1 + Math.sin(frame * 0.06) * 0.008;
+            },
+            'overload': () => {
+                mOx += Math.sin(frame * 0.2) * 1;
+                mOy += Math.cos(frame * 0.2) * 1;
+            },
+            'disjointed': () => {
+                mOx += Math.sin(frame * 0.08) * 1.5;
+                mRot += Math.sin(frame * 0.06) * 0.02;
+                mSx *= 1 + Math.sin(frame * 0.1) * 0.015;
+            },
+            'pose': () => {
+                mOy += Math.sin(frame * 0.03) * 2;
+                mRot += Math.sin(frame * 0.025) * 0.01;
+            }
+        };
+
+        if (microMovementConfig.poses[state.pose] && poseMicroMovements[state.pose]) {
+            poseMicroMovements[state.pose]();
+        }
+
         switch (state.anim) {
             case 'flotar':
                 mOy += Math.sin(frame * 0.05) * 40 * deltaTime;
@@ -324,9 +597,7 @@ export const startRenderLoop = (
 
         drawEscenario(srcCtx, srcCanvas.width, srcCanvas.height, state.escenario || 'ninguno', frame);
 
-        const currentImg = images[state.pose] && images[state.pose].complete && images[state.pose].naturalWidth !== 0
-            ? images[state.pose]
-            : images['subject'];
+        const currentImg = getCurrentFrame(state.pose, deltaTime);
         const aspect = currentImg.width / currentImg.height;
         let h = 450;
         let w = h * aspect;
@@ -513,12 +784,17 @@ export const loadImages = (): Promise<void> => {
     return new Promise((resolve) => {
         let loaded = 0;
         const total = poses.length;
-        
+
         poses.forEach(pose => {
             const img = new Image();
             img.src = `Hikaru/${pose}.png`;
             img.onload = () => {
                 images[pose] = img;
+                const forcedFrames = spriteConfig[pose] || undefined;
+                spriteCache[pose] = detectAndSliceSpriteSheet(img, pose, forcedFrames);
+                if (spriteCache[pose].isSpriteSheet) {
+                    console.log(`SOMA: Spritesheet "${pose}" - ${spriteCache[pose].frameCount} frames - ${img.width}x${img.height} - frame: ${spriteCache[pose].frames[0]?.width}x${spriteCache[pose].frames[0]?.height}`);
+                }
                 loaded++;
                 resourcesLoaded.images = loaded;
                 if (loaded === total) {
@@ -533,6 +809,7 @@ export const loadImages = (): Promise<void> => {
                 fallback.width = 200;
                 fallback.height = 400;
                 images[pose] = fallback;
+                spriteCache[pose] = { isSpriteSheet: false, frames: [], frameCount: 1, currentFrame: 0, frameTimer: 0, frameSpeed: 150, pingPong: false, direction: 1 };
                 loaded++;
                 resourcesLoaded.images = loaded;
                 if (loaded === total) {
