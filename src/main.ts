@@ -15,6 +15,8 @@ import {
     type Tema,
 } from './lib/hud';
 import { crearCaptura, nombreCaptura } from './lib/captura';
+import { iniciarProtocolos } from './lib/protocolos';
+import { renderProtocolos } from './lib/protocolosHud';
 import type { MouseData } from './types';
 
 const srcCanvas = document.getElementById('srcCanvas') as HTMLCanvasElement;
@@ -314,6 +316,21 @@ const refrescarHUD = (): void => {
 refrescarHUD();
 setInterval(refrescarHUD, 250);
 
+// --- Protocolos ---
+const protocolos = iniciarProtocolos();
+
+const refrescarProtocolos = (eventos: string[] = []): void => {
+    renderProtocolos(protocolos.estado());
+
+    if (eventos.length > 0 && terminal) {
+        for (const evento of eventos) terminal.agregar(evento, 'synergy');
+        terminal.anunciar(eventos.join(' '));
+    }
+};
+
+refrescarProtocolos();
+setInterval(() => refrescarProtocolos(protocolos.tick(state.stats)), 1000);
+
 async function mostrarResultados(consulta: string): Promise<void> {
     if (!terminal) return;
 
@@ -416,6 +433,7 @@ menuBtn?.addEventListener('click', () => {
     if (discoveryCount) discoveryCount.innerText = String(discoveredWords.size);
     if (totalCount) totalCount.innerText = String(totalWords);
     if (comboCount) comboCount.innerText = String(discoveredCombos.size);
+    refrescarProtocolos();
     abrirMenu(true);
 });
 
@@ -482,6 +500,8 @@ input.addEventListener('keydown', (e) => {
         const rawVal = input.value.trim();
         const words = palabrasDe(rawVal);
         const val = words.join(' ');
+        const antesPalabras = discoveredWords.size;
+        const antesCombos = discoveredCombos.size;
         
         if (rawVal !== '') {
             terminal?.agregar(`> ${rawVal}`, 'cmd');
@@ -529,6 +549,13 @@ input.addEventListener('keydown', (e) => {
             words.forEach(w => {
                 if (cmds[w]) saveDiscovery(w, false);
             });
+        } else if (cmds[val]) {
+            // Comandos de varias palabras («primer plano», «san valentin»).
+            cmds[val]();
+            saveDiscovery(val, false);
+            valid = true;
+            commandCount++;
+            if (commandCount % 5 === 0) showNextTip();
         } else {
             words.forEach(w => {
                 if (cmds[w]) {
@@ -556,6 +583,17 @@ input.addEventListener('keydown', (e) => {
                     log.innerText = `SOMA: no reconozco "${textoFallido}". Escribí "comandos" para ver la lista.`;
                 });
         }
+
+        const eventosProtocolo = protocolos.actualizar({
+            stats: state.stats,
+            palabrasNuevas: Math.max(0, discoveredWords.size - antesPalabras),
+            combosNuevos: Math.max(0, discoveredCombos.size - antesCombos),
+            comandos: val ? [val, ...words] : words,
+            combo: comboRes,
+            escenario: state.escenario,
+        });
+        refrescarProtocolos(eventosProtocolo);
+
         input.value = '';
     }
 });

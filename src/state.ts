@@ -123,6 +123,31 @@ export const updateStat = (stat: keyof Stats, amount: number) => {
     state.stats[stat] = Math.min(100, Math.max(0, state.stats[stat] + amount));
 };
 
+// --- Director de escena ---
+// Cada comando reemplaza la capa de acción anterior. El ambiente (escenario,
+// clima, fondo) y los modos persistentes sobreviven hasta que otro comando
+// los cambie o se reinicie la simulación. Esto evita que el fuego de un
+// comando siga pegado cuando después pedís un holograma.
+const CAMPOS_ACCION: Array<keyof Pose> = [
+    'pose', 'overlay', 'particles', 'anim', 'scaleX', 'scaleY', 'rotation',
+    'offsetX', 'offsetY', 'alpha', 'aberration', 'bloom', 'distortion',
+    'clones', 'shadowColor', 'filter', 'tint', 'fx',
+];
+
+const asignarCampo = (campo: keyof Pose, valor: unknown): void => {
+    if (campo === 'interactive') {
+        (target as unknown as Record<string, unknown>)[campo] = valor;
+    } else if (typeof valor === 'number') {
+        (target as unknown as Record<string, unknown>)[campo] = valor;
+    } else {
+        (state as unknown as Record<string, unknown>)[campo] = valor;
+    }
+};
+
+const resetCampoAccion = (campo: keyof Pose): void => {
+    asignarCampo(campo, defaults[campo]);
+};
+
 export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, dur: number = 5000): void => {
     if (movimientoReducido) {
         mod = { ...mod, aberration: 0, distortion: 0, bloom: 0 };
@@ -131,31 +156,28 @@ export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, 
     logEl.innerText = msg;
     logEl.style.opacity = '1';
 
+    // 1. La nueva acción pisa los campos de acción que no especifica.
+    for (const campo of CAMPOS_ACCION) {
+        if (!(campo in mod)) resetCampoAccion(campo);
+    }
+
+    // 2. Aplicar los campos del comando.
+    for (const [clave, valor] of Object.entries(mod)) {
+        asignarCampo(clave as keyof Pose, valor);
+    }
+
     if (activeTimers['wording']) clearTimeout(activeTimers['wording']);
     activeTimers['wording'] = setTimeout(() => {
         logEl.innerText = "SOMA: Entorno estabilizado.";
         delete activeTimers['wording'];
     }, dur);
 
-    for (const key in mod) {
-        const k = key as keyof Pose;
-        if (typeof mod[k] === 'number') {
-            (target as unknown as Record<string, unknown>)[k] = mod[k];
-        } else {
-            (state as unknown as Record<string, unknown>)[k] = mod[k];
-        }
-
-        if (activeTimers[k]) clearTimeout(activeTimers[k]);
-        if (dur > 0) {
-            activeTimers[k] = setTimeout(() => {
-                if (typeof defaults[k] === 'number') {
-                    (target as unknown as Record<string, unknown>)[k] = defaults[k];
-                } else {
-                    (state as unknown as Record<string, unknown>)[k] = defaults[k];
-                }
-                delete activeTimers[k];
-            }, dur);
-        }
+    if (activeTimers['accion']) clearTimeout(activeTimers['accion']);
+    if (dur > 0) {
+        activeTimers['accion'] = setTimeout(() => {
+            for (const campo of CAMPOS_ACCION) resetCampoAccion(campo);
+            delete activeTimers['accion'];
+        }, dur);
     }
 };
 

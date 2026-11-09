@@ -113,6 +113,11 @@
                     <div class="hud-row"><span>EFECTOS</span><b id="ctx-efectos">—</b></div>
                     <div class="hud-row"><span>ARCHIVO</span><b><span id="hud-discovery">0</span>/<span id="hud-total">0</span> · <span id="hud-combos">0</span> SIN</b></div>
                 </div>
+
+                <div class="hud-block hud-protocols">
+                    <div class="hud-head"><span>PROTOCOLOS</span><span id="protocolos-puntaje">0 PTS</span></div>
+                    <div id="protocolos-lista" class="protocolos-lista"></div>
+                </div>
             </div>
 
             <div id="tip-container" aria-live="polite"></div>
@@ -175,6 +180,15 @@
                 <div class="panel-actions">
                     <button id="btn-captura" type="button">CAPTURAR ESCENA (PNG)</button>
                 </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>PROTOCOLOS</h3>
+                <div class="panel-metrics panel-metrics--dos">
+                    <div class="metric"><span class="k">PUNTAJE</span><b id="protocolos-puntaje-menu">0</b><small>puntos</small></div>
+                    <div class="metric"><span class="k">COMPLETADOS</span><b id="protocolos-completados-menu">0</b><small>protocolos</small></div>
+                </div>
+                <div id="protocolos-lista-menu" class="protocolos-lista protocolos-lista--panel"></div>
             </div>
 
             <div class="panel-section">

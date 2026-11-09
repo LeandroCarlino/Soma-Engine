@@ -369,12 +369,32 @@ body {
     position: absolute;
     inset: 0;
     z-index: 6;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr auto;
+    gap: 0 20px;
+    align-items: start;
+    justify-items: start;
     padding: 26px;
     pointer-events: none;
+}
+
+.hud-vitals {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.hud-context {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+}
+
+.hud-protocols {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: end;
+    max-width: 300px;
 }
 
 .hud-block {
@@ -503,6 +523,82 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* --- Protocolos --- */
+
+.protocolos-lista {
+    display: flex;
+    flex-direction: column;
+}
+
+.protocolo {
+    padding: 7px 12px 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.protocolo:first-child {
+    border-top: 0;
+}
+
+.protocolo-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.protocolo-titulo {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    color: var(--text);
+}
+
+.protocolo-progreso {
+    font-size: 8px;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.protocolo-barra {
+    height: 4px;
+    margin-top: 5px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.protocolo-barra span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-soft);
+    transition: width 0.3s ease;
+}
+
+.protocolo-desc {
+    margin: 4px 0 0;
+    font-size: 8px;
+    line-height: 1.45;
+    color: var(--muted);
+}
+
+.protocolos-lista--panel .protocolo {
+    padding: 9px 12px;
+}
+
+.protocolos-lista--panel .protocolo-titulo,
+.protocolos-lista--panel .protocolo-progreso {
+    font-size: 10px;
+}
+
+.protocolos-lista--panel .protocolo-desc {
+    font-size: 10px;
+}
+
+.panel-metrics.panel-metrics--dos {
+    grid-template-columns: repeat(2, 1fr);
+    margin-bottom: 10px;
 }
 
 /* ------------------------------------------------------------
@@ -1172,6 +1268,8 @@ a:focus-visible {
     }
 
     .hud-context { display: none; }
+
+    .hud-protocols { display: none; }
 
     .hud-block { min-width: 196px; }
 

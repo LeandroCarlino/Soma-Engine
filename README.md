@@ -12,6 +12,8 @@ Simulador interactivo de estados mentales y emocionales con aceleración WebGL.
 - **Variantes de Hikaru**: holograma, silueta, térmica, espejo y estela
 - **Partículas ambientales** (lluvia, nieve, hojas, estrellas, datos, aurora)
 - **Fuego, humo y rayos** con sprites aditivos y brillo
+- **Protocolos** con objetivos, puntaje y progreso persistente
+- **Director de escena** que evita que los efectos se pisen
 - **Emotes animados** que responden al estado emocional
 - **Física básica** con gravedad y rebotes
 - **Audio procedural** generado con Web Audio API
@@ -169,6 +171,27 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 - **Scanlines** más suaves para no tapar los efectos.
 - **Tests: 58**.
 
+### Sexto pase: director de escena y protocolos (Fase 2)
+
+- **Director de escena**: cada comando reemplaza la capa de acción anterior
+  en vez de dejar efectos colgados. El ambiente (escenario, clima, fondo) y
+  los modos persistentes (interactivo, física) sobreviven hasta que otro
+  comando los cambie o se reinicie. `holograma` después de `tierra fuego` ya
+  no arrastra el fuego.
+- **Comandos de varias palabras**: `primer plano`, `san valentin` y
+  `anio nuevo` ahora se ejecutan completos; antes el parser los partía y
+  nunca coincidían.
+- **Protocolos**: 3 objetivos activos generados entre 6 tipos (felicidad
+  sostenida, descubrir palabras, descubrir sinergias, usar un comando,
+  visitar escenarios, resistir con energía baja). Progreso en el HUD,
+  puntaje, completados y persistencia en `localStorage`.
+- **Panel de protocolos**: bloque en el HUD abajo a la izquierda y sección
+  completa en el panel de control, con barras de progreso y descripciones.
+- **Tests: 69** (10 de protocolos, render del HUD, director de escena y
+  comandos de varias palabras).
+- **Bundle**: ~132 kB iniciales (40,7 kB gzip); el catálogo de 91 kB sigue
+  cargándose solo al pedir ayuda, buscar o ante un typo.
+
 ## Estructura del proyecto
 
 ```
@@ -181,7 +204,7 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 │   ├── state.ts          # Estado global y persistencia
 │   ├── audio.ts          # Sonidos procedurales
 │   ├── types.ts          # Tipos TypeScript
-│   ├── lib/              # catálogo, búsqueda, captura, HUD, storage, texto, diálogos
+│   ├── lib/              # catálogo, búsqueda, captura, HUD, protocolos, storage, texto, diálogos
 │   └── test/setup.ts     # Setup de Vitest (localStorage y matchMedia)
 ├── public/
 │   ├── favicon.svg
