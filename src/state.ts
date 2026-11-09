@@ -1,22 +1,28 @@
 import { Sfx } from './audio';
 import type { Pose, Physics, Stats } from './types';
+import { escribirJSON, leerJSON } from './lib/storage';
+import { normalizarTexto } from './lib/texto';
 
-export const discoveredWords = new Set<string>(JSON.parse(localStorage.getItem('soma_words') || '[]'));
-export const discoveredCombos = new Set<string>(JSON.parse(localStorage.getItem('soma_combos') || '[]'));
+export const discoveredWords = new Set<string>(leerJSON<string[]>('soma_words', []));
+export const discoveredCombos = new Set<string>(leerJSON<string[]>('soma_combos', []));
 export let nsfwInterval: ReturnType<typeof setInterval> | null = null;
 
 // --- UTILS ---
-export const normalizeText = (text: string): string => {
-    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-};
+/** Compatibilidad: la implementación vive en lib/texto. */
+export const normalizeText = normalizarTexto;
+
+/** Si el usuario pidió menos movimiento, se apagan los efectos intensos. */
+export const movimientoReducido =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export const saveDiscovery = (word: string, isCombo: boolean = false): void => {
     if (isCombo) {
         discoveredCombos.add(word);
-        localStorage.setItem('soma_combos', JSON.stringify(Array.from(discoveredCombos)));
+        escribirJSON('soma_combos', Array.from(discoveredCombos));
     } else {
         discoveredWords.add(word);
-        localStorage.setItem('soma_words', JSON.stringify(Array.from(discoveredWords)));
+        escribirJSON('soma_words', Array.from(discoveredWords));
     }
 };
 
@@ -47,10 +53,8 @@ export const defaults: Pose = {
 };
 
 // --- TAMAGOTCHI LOGIC ---
-const loadStats = (): Stats => {
-    const saved = localStorage.getItem('soma_stats');
-    return saved ? JSON.parse(saved) : { energy: 100, hunger: 100, happiness: 100 };
-};
+const loadStats = (): Stats =>
+    leerJSON<Stats>('soma_stats', { energy: 100, hunger: 100, happiness: 100 });
 
 export const state: Pose & { stats: Stats } = { ...defaults, stats: loadStats() };
 export const target: Pose = { ...defaults };
@@ -64,7 +68,7 @@ setInterval(() => {
     state.stats.energy = Math.max(0, state.stats.energy - 0.03);
     state.stats.happiness = Math.max(0, state.stats.happiness - 0.04);
     
-    localStorage.setItem('soma_stats', JSON.stringify(state.stats));
+    escribirJSON('soma_stats', state.stats);
 
     // Estados automáticos si no hay comando activo (Prioridad inversa)
     if (Object.keys(activeTimers).length === 0) {
@@ -96,6 +100,10 @@ export const updateStat = (stat: keyof Stats, amount: number) => {
 };
 
 export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, dur: number = 5000): void => {
+    if (movimientoReducido) {
+        mod = { ...mod, aberration: 0, distortion: 0, bloom: 0 };
+    }
+
     logEl.innerText = msg;
     logEl.style.opacity = '1';
 
@@ -128,6 +136,11 @@ export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, 
 };
 
 export const triggerNSFW = (logEl: HTMLElement): void => {
+    if (movimientoReducido) {
+        logEl.innerText = 'Acceso denegado. Bloqueo de seguridad activo.';
+        return;
+    }
+
     const nsfwLayer = document.getElementById('nsfw-layer');
     if (!nsfwLayer) return;
     nsfwLayer.classList.add('active');

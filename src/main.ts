@@ -1,7 +1,8 @@
 import { Sfx } from './audio';
 import { startRenderLoop, loadImages } from './render';
 import { getCmds, checkCombos } from './diccionario';
-import { state, physics, target, discoveredWords, discoveredCombos, saveDiscovery, normalizeText } from './state';
+import { state, physics, target, discoveredWords, discoveredCombos, saveDiscovery } from './state';
+import { palabrasDe } from './lib/texto';
 import type { MouseData } from './types';
 
 const srcCanvas = document.getElementById('srcCanvas') as HTMLCanvasElement;
@@ -70,8 +71,13 @@ const showNextTip = (): void => {
     }
 };
 
+// El click dura un frame: el bucle de render lo consume y lo apaga.
+let clickPendiente = false;
+
 const getMouseData = (): MouseData => {
-    return { x: mouseX, y: mouseY, clicked: false };
+    const datos = { x: mouseX, y: mouseY, clicked: clickPendiente };
+    clickPendiente = false;
+    return datos;
 };
 
 gameCanvas.addEventListener('mousedown', (e) => {
@@ -100,7 +106,9 @@ gameCanvas.addEventListener('mousemove', (e) => {
 
 gameCanvas.addEventListener('mouseup', () => physics.isDragging = false);
 gameCanvas.addEventListener('mouseleave', () => physics.isDragging = false);
-gameCanvas.addEventListener('click', () => { if (target.interactive) getMouseData().clicked = true; });
+gameCanvas.addEventListener('click', () => {
+    if (target.interactive) clickPendiente = true;
+});
 
 document.getElementById('btn-accept-warning')?.addEventListener('click', async () => {
     const warningModal = document.getElementById('warning-modal');
@@ -128,20 +136,26 @@ document.getElementById('btn-accept-warning')?.addEventListener('click', async (
 const cmds = getCmds(log);
 const totalWords = Object.keys(cmds).length;
 
-document.getElementById('menu-btn')?.addEventListener('click', () => {
+const menuBtn = document.getElementById('menu-btn');
+const menuModal = document.getElementById('menu-modal');
+
+const abrirMenu = (abierto: boolean): void => {
+    menuModal?.classList.toggle('hidden', !abierto);
+    menuBtn?.setAttribute('aria-expanded', String(abierto));
+};
+
+menuBtn?.addEventListener('click', () => {
     const discoveryCount = document.getElementById('discovery-count');
     const totalCount = document.getElementById('total-count');
     const comboCount = document.getElementById('combo-count');
     if (discoveryCount) discoveryCount.innerText = String(discoveredWords.size);
     if (totalCount) totalCount.innerText = String(totalWords);
     if (comboCount) comboCount.innerText = String(discoveredCombos.size);
-    const menuModal = document.getElementById('menu-modal');
-    if (menuModal) menuModal.classList.remove('hidden');
+    abrirMenu(true);
 });
 
 document.getElementById('btn-close-menu')?.addEventListener('click', () => {
-    const menuModal = document.getElementById('menu-modal');
-    if (menuModal) menuModal.classList.add('hidden');
+    abrirMenu(false);
     input.focus();
 });
 
@@ -196,7 +210,8 @@ input.addEventListener('keydown', (e) => {
     
     if (e.key === 'Enter') {
         const rawVal = input.value.trim();
-        const val = normalizeText(rawVal); // Normaliza acentos y minusculas
+        const words = palabrasDe(rawVal);
+        const val = words.join(' ');
         
         if (rawVal !== '') {
             commandHistory.unshift(rawVal);
@@ -204,7 +219,6 @@ input.addEventListener('keydown', (e) => {
             historyIndex = -1;
         }
         
-        const words = val.split(/\s+/);
         let valid = false;
 
         const comboRes = checkCombos(words, log);

@@ -39,12 +39,10 @@ export const Sfx = {
                 if (this.ctx.state === 'suspended') {
                     this.ctx.resume().then(() => {
                         this.isInitialized = true;
-                        console.log('SOMA: Audio subsystem inicializado');
                         resolve();
                     }).catch(reject);
                 } else {
                     this.isInitialized = true;
-                    console.log('SOMA: Audio subsystem inicializado');
                     resolve();
                 }
             } catch (e) {

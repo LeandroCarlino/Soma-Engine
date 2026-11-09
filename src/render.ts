@@ -313,7 +313,6 @@ export const startRenderLoop = (
     webglCanvas: HTMLCanvasElement,
     getMouseData: () => MouseData
 ): void => {
-    console.log('SOMA: Iniciando render loop...');
     
     const container = document.getElementById('stage-container');
     
@@ -347,7 +346,6 @@ export const startRenderLoop = (
     
     glContext = initWebGL(webglCanvas);
     const webglSupported = !!glContext;
-    console.log('SOMA: WebGL soportado:', webglSupported);
 
     if (!webglSupported) {
         webglCanvas.style.display = 'none';
@@ -401,6 +399,9 @@ export const startRenderLoop = (
         state.aberration = lerp(state.aberration, target.aberration, 0.1 * deltaTime);
         state.distortion = lerp(state.distortion, target.distortion, 0.1 * deltaTime);
         state.bloom = lerp(state.bloom, target.bloom, 0.1 * deltaTime);
+        // Los campos que no son numéricos se copian tal cual: sin esto, el
+        // modo interactivo nunca llegaba al render y el click no hacía nada.
+        state.interactive = target.interactive;
 
         const mouseData = getMouseData();
 
@@ -777,7 +778,6 @@ export const startRenderLoop = (
     lastFrameTime = performance.now();
     requestAnimationFrame(render);
     
-    console.log('SOMA: Render loop iniciado');
 };
 
 export const loadImages = (): Promise<void> => {
@@ -787,24 +787,20 @@ export const loadImages = (): Promise<void> => {
 
         poses.forEach(pose => {
             const img = new Image();
-            img.src = `Hikaru/${pose}.png`;
+            img.src = `Hikaru/${pose}.webp`;
             img.onload = () => {
                 images[pose] = img;
                 const forcedFrames = spriteConfig[pose] || undefined;
                 spriteCache[pose] = detectAndSliceSpriteSheet(img, pose, forcedFrames);
-                if (spriteCache[pose].isSpriteSheet) {
-                    console.log(`SOMA: Spritesheet "${pose}" - ${spriteCache[pose].frameCount} frames - ${img.width}x${img.height} - frame: ${spriteCache[pose].frames[0]?.width}x${spriteCache[pose].frames[0]?.height}`);
-                }
                 loaded++;
                 resourcesLoaded.images = loaded;
                 if (loaded === total) {
                     allLoaded = true;
-                    console.log('SOMA: Todos los recursos gráficos cargados');
                     resolve();
                 }
             };
             img.onerror = () => {
-                console.warn(`SOMA: Imagen no hallada: ${pose}.png`);
+                console.warn(`SOMA: Imagen no hallada: ${pose}.webp`);
                 const fallback = new Image();
                 fallback.width = 200;
                 fallback.height = 400;
