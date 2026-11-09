@@ -28,8 +28,13 @@ export function cargaDe(mod: Partial<Pose>): number {
   return Math.round(carga);
 }
 
-export function aplicarCarga(valor: number, mod: Partial<Pose>): number {
-  return Math.max(0, Math.min(100, valor - cargaDe(mod)));
+export function aplicarCarga(
+  valor: number,
+  mod: Partial<Pose>,
+  multiplicador = 1,
+): number {
+  const carga = Math.round(cargaDe(mod) * multiplicador);
+  return Math.max(0, Math.min(100, valor - carga));
 }
 
 export function recuperarEstabilidad(valor: number): number {

@@ -32,9 +32,9 @@ describe('hud', () => {
   });
 
   it('describe los efectos activos', () => {
-    expect(describirEfectos('none', 'none', 'none')).toBe('—');
-    expect(describirEfectos('flotar', 'fuego', 'none')).toBe('FLOTAR · FUEGO');
-    expect(describirEfectos('glitch', 'none', 'lluvia')).toBe('GLITCH · LLUVIA');
+    expect(describirEfectos('none', 'none')).toBe('—');
+    expect(describirEfectos('flotar', 'fuego')).toBe('FLOTAR · FUEGO');
+    expect(describirEfectos('glitch', 'none')).toBe('GLITCH');
   });
 
   it('valida el tema guardado', () => {
@@ -97,7 +97,10 @@ describe('hud', () => {
     document.body.innerHTML = `
       <b id="ctx-pose"></b>
       <b id="ctx-escenario"></b>
+      <b id="ctx-clima"></b>
+      <b id="ctx-hora"></b>
       <b id="ctx-efectos"></b>
+      <b id="ctx-afinidad"></b>
       <span id="hud-discovery"></span>
       <span id="hud-total"></span>
       <span id="hud-combos"></span>
@@ -109,8 +112,10 @@ describe('hud', () => {
       pose: 'happy',
       anim: 'flotar',
       particles: 'fuego',
-      envParticles: 'none',
+      envParticles: 'lluvia',
       escenario: 'bosque',
+      hora: 'noche',
+      afinidad: 'Mente',
       palabras: 12,
       total: 465,
       combos: 2,
@@ -120,7 +125,10 @@ describe('hud', () => {
 
     expect(document.getElementById('ctx-pose')?.textContent).toBe('HAPPY');
     expect(document.getElementById('ctx-escenario')?.textContent).toBe('BOSQUE');
+    expect(document.getElementById('ctx-clima')?.textContent).toBe('LLUVIA');
+    expect(document.getElementById('ctx-hora')?.textContent).toBe('NOCHE');
     expect(document.getElementById('ctx-efectos')?.textContent).toBe('FLOTAR · FUEGO');
+    expect(document.getElementById('ctx-afinidad')?.textContent).toBe('Mente');
     expect(document.getElementById('hud-discovery')?.textContent).toBe('12');
     expect(document.getElementById('hud-combos')?.textContent).toBe('2');
     expect(document.getElementById('hud-cadenas')?.textContent).toBe('3');

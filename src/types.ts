@@ -11,6 +11,7 @@ export type AnimType =
 export type ParticleType = 'none' | 'fuego' | 'rayos' | 'humo' | 'chispas' | 'burbujas' | 'magia';
 export type EnvParticleType = 'none' | 'lluvia' | 'nieve' | 'hojas' | 'datos' | 'estrellas' | 'ceniza' | 'petalos' | 'aurora';
 export type BgLayerType = 'none' | 'grid' | 'void';
+export type HoraType = 'dia' | 'atardecer' | 'noche' | 'amanecer';
 export type EfectoHikaru = 'none' | 'espejo' | 'holograma' | 'silueta' | 'termica' | 'estela';
 export type EscenarioType = 
     | 'ninguno' | 'ciudad' | 'bosque' | 'playa' | 'espacio' | 'dojo' | 'laboratorio' 
@@ -46,6 +47,7 @@ export interface Pose {
     filter?: string;
     tint?: string;
     escenario?: EscenarioType;
+    hora: HoraType;
     fx: EfectoHikaru;
 }
 

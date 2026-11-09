@@ -23,6 +23,11 @@ describe('estabilidad', () => {
     expect(aplicarCarga(0, {})).toBe(0);
   });
 
+  it('aplica multiplicadores de afinidad', () => {
+    expect(aplicarCarga(100, { bloom: 4 }, 1.2)).toBe(88);
+    expect(aplicarCarga(100, { bloom: 4 }, 0.85)).toBe(91);
+  });
+
   it('recupera un punto por tick y no pasa de 100', () => {
     expect(recuperarEstabilidad(50)).toBe(51);
     expect(recuperarEstabilidad(100)).toBe(100);

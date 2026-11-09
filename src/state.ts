@@ -6,8 +6,8 @@ import {
     ESTABILIDAD_INICIAL,
     ESTABILIDAD_TRAS_SOBRECARGA,
     aplicarCarga,
-    recuperarEstabilidad,
 } from './lib/estabilidad';
+import { multiplicadorCarga, recuperacionAfinidad } from './lib/afinidades';
 
 export const discoveredWords = new Set<string>(leerJSON<string[]>('soma_words', []));
 export const discoveredCombos = new Set<string>(leerJSON<string[]>('soma_combos', []));
@@ -56,6 +56,7 @@ export const defaults: Pose = {
     filter: '',
     tint: 'none',
     escenario: 'ninguno',
+    hora: 'dia',
     fx: 'none'
 };
 
@@ -190,7 +191,7 @@ export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, 
         }, dur);
     }
 
-    estabilidad.valor = aplicarCarga(estabilidad.valor, mod);
+    estabilidad.valor = aplicarCarga(estabilidad.valor, mod, multiplicadorCarga());
     if (estabilidad.valor <= 0 && !estabilidad.sobrecargado) {
         estabilidad.sobrecargado = true;
         activeTimers['sobrecarga'] = setTimeout(() => {
@@ -212,7 +213,10 @@ export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, 
 
 export const recuperarEstabilidadSistema = (): void => {
     if (!estabilidad.sobrecargado) {
-        estabilidad.valor = recuperarEstabilidad(estabilidad.valor);
+        estabilidad.valor = Math.min(
+            100,
+            estabilidad.valor + recuperacionAfinidad(),
+        );
     }
 };
 

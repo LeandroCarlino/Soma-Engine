@@ -21,6 +21,14 @@ import { renderProtocolos } from './lib/protocolosHud';
 import { iniciarCadenas } from './lib/cadenas';
 import { iniciarPeticiones, type EventoPeticion } from './lib/peticiones';
 import { renderPeticion } from './lib/peticionesHud';
+import {
+    AFINIDADES,
+    afinidadActual,
+    datosAfinidad,
+    guardarAfinidad,
+    multiplicadorPuntos,
+    type TipoAfinidad,
+} from './lib/afinidades';
 import type { MouseData } from './types';
 
 const srcCanvas = document.getElementById('srcCanvas') as HTMLCanvasElement;
@@ -118,6 +126,44 @@ document.querySelectorAll<HTMLButtonElement>('.theme-swatch').forEach((boton) =>
         aplicarTema(tema);
         escribirJSON('soma_tema', tema);
         marcarTema(tema);
+    });
+});
+
+// --- Afinidad elemental ---
+const afinidadInicial = afinidadActual();
+
+const marcarAfinidad = (id: TipoAfinidad | null): void => {
+    document.querySelectorAll<HTMLButtonElement>('.afinidad-btn').forEach((boton) => {
+        boton.setAttribute('aria-pressed', String(boton.dataset.afinidad === id));
+    });
+};
+
+if (afinidadInicial) {
+    const datos = AFINIDADES[afinidadInicial];
+    state.escenario = datos.escenario;
+    state.hora = datos.hora;
+    state.envParticles = datos.clima;
+    state.bgColor = datos.bgColor;
+}
+
+marcarAfinidad(afinidadInicial);
+
+document.querySelectorAll<HTMLButtonElement>('.afinidad-btn').forEach((boton) => {
+    boton.addEventListener('click', () => {
+        const id = boton.dataset.afinidad as TipoAfinidad;
+        const datos = AFINIDADES[id];
+
+        guardarAfinidad(id);
+        state.escenario = datos.escenario;
+        state.hora = datos.hora;
+        state.envParticles = datos.clima;
+        state.bgColor = datos.bgColor;
+
+        marcarAfinidad(id);
+        refrescarHUD();
+        terminal?.agregar(`AFINIDAD: ${datos.nombre}. ${datos.descripcion}`, 'synergy');
+        terminal?.anunciar(`Afinidad ${datos.nombre} activada.`);
+        Sfx.playChord([392, 523, 659], 'sine', 2, 0.08);
     });
 });
 
@@ -317,6 +363,8 @@ const refrescarHUD = (): void => {
         particles: state.particles,
         envParticles: state.envParticles,
         escenario: state.escenario,
+        hora: state.hora,
+        afinidad: datosAfinidad(afinidadActual())?.nombre ?? '—',
         palabras: discoveredWords.size,
         total: totalWords,
         combos: discoveredCombos.size,
@@ -356,10 +404,11 @@ function manejarPeticion(evento: EventoPeticion): void {
     }
 
     if (evento.tipo === 'exito') {
+        const puntos = Math.round(25 * multiplicadorPuntos());
         updateStat('happiness', 12);
-        protocolos.bonificar(25);
+        protocolos.bonificar(puntos);
         refrescarProtocolos();
-        terminal?.agregar(`PETICIÓN CUMPLIDA: ${evento.peticion.texto} (+25 PTS)`, 'synergy');
+        terminal?.agregar(`PETICIÓN CUMPLIDA: ${evento.peticion.texto} (+${puntos} PTS)`, 'synergy');
         terminal?.anunciar('SOMA: petición cumplida.');
         Sfx.playChord([523, 659, 784], 'sine', 2, 0.08);
     } else {
@@ -650,13 +699,14 @@ input.addEventListener('keydown', (e) => {
         const resultadoCadena = cadenas.registrar(val);
         if (resultadoCadena) {
             const { cadena, nueva } = resultadoCadena;
+            const puntos = Math.round(cadena.recompensa * multiplicadorPuntos());
             executeCmd(
-                `${cadena.mensaje} (+${cadena.recompensa} PTS)`,
+                `${cadena.mensaje} (+${puntos} PTS)`,
                 cadena.efecto,
                 log,
                 6000,
             );
-            protocolos.bonificar(cadena.recompensa);
+            protocolos.bonificar(puntos);
             refrescarProtocolos();
             refrescarHUD();
 

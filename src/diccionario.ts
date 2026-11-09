@@ -1,5 +1,6 @@
 import { target, executeCmd, resetState, triggerNSFW, state, physics, updateStat } from './state';
 import { Sfx } from './audio';
+import { afinidadActual } from './lib/afinidades';
 import type { CommandMap } from './types';
 
 export const getCmds = (logEl: HTMLElement): CommandMap => {
@@ -202,7 +203,7 @@ export const getCmds = (logEl: HTMLElement): CommandMap => {
         "arena": () => { cmd("Tormenta del desierto. Visibilidad reducida.", { pose: 'protection', envParticles: 'nieve', bgColor: '#220', distortion: 1 }); Sfx.wind(5, 0.6); },
         "asfixia": () => { updateStat('energy', -20); cmd("Falta de oxígeno. Nivel crítico.", { pose: 'disjointed', overlay: 'rgba(0,0,50,0.5)', anim: 'caos', aberration: 3 }); Sfx.noise(5, 0.2, 'lowpass', 300); },
         "astral": () => { cmd("Proyección etérea fuera del cuerpo físico.", { pose: 'meditating', alpha: 0.4, shadowColor: '#0ff', envParticles: 'estrellas', anim: 'flotar', bgLayer: 'void' }); Sfx.play(800, 'sine', 5, 0.1); },
-        "atardecer": () => { cmd("Luz dorada del ocaso bañando todo.", { pose: 'meditating', bgColor: '#420', filter: 'sepia(0.5) saturate(150%)' }); Sfx.play(440, 'sine', 2, 0.1); },
+        "atardecer": () => { cmd("Luz dorada del ocaso bañando todo.", { pose: 'meditating', hora: 'atardecer' }); Sfx.play(440, 'sine', 2, 0.1); },
         "aura": () => { cmd("Emisión de energía biomagnética visible.", { pose: 'overload', shadowColor: '#ff0', bloom: 2 }); },
         "auto": () => { cmd("Alta velocidad. Desplazamiento inérico activo.", { pose: 'running', anim: 'drift', particles: 'humo' }); Sfx.noise(5, 0.3); },
         "avatar": () => { cmd("Maestro de los cuatro elementos fundamentales.", { pose: 'overload', anim: 'flotar', shadowColor: '#ff0', bloom: 3 }); Sfx.playChord([261, 329, 392], 'sine', 3, 0.1); },
@@ -210,7 +211,7 @@ export const getCmds = (logEl: HTMLElement): CommandMap => {
         "beso": () => { updateStat('happiness', 30); cmd("Contacto físico detectado. Endorfinas al máximo.", { pose: 'happy', scaleX: 1.5, scaleY: 1.5, bloom: 1 }); Sfx.play(800, 'sine', 0.2, 0.1); },
         "blanco": () => { cmd("Saturación de luz blanca. Colores purgados.", { pose: 'pose', filter: 'brightness(10)' }); },
         "borroso": () => { cmd("Lentes desenfocadas. Falla óptica.", { pose: 'subject', filter: 'blur(8px)' }); },
-        "bosque": () => { cmd("Entorno vegetal. Relajación simulada activa.", { pose: 'meditating', envParticles: 'hojas', overlay: 'rgba(0,100,0,0.2)' }); Sfx.wind(5, 0.2); },
+        "bosque": () => { cmd("Entorno vegetal. Relajación simulada activa.", { escenario: 'bosque', pose: 'meditating', envParticles: 'hojas', overlay: 'rgba(0,100,0,0.2)' }); Sfx.wind(5, 0.2); },
         "bug": () => { cmd("Error inesperado en la matriz.", { pose: 'disjointed', anim: 'glitch', aberration: 4 }); Sfx.noise(2, 0.3); },
         "burbuja": () => { cmd("Cápsula de protección frágil aislante.", { pose: 'squat', anim: 'flotar', overlay: 'rgba(0,255,255,0.1)', distortion: 1 }); },
         "caos": () => { cmd("Fallo en la estructura lógica. Inestabilidad.", { pose: 'disjointed', anim: 'caos', aberration: 8, distortion: 3 }); Sfx.play(150, 'square', 5, 0.2); },
@@ -234,7 +235,7 @@ export const getCmds = (logEl: HTMLElement): CommandMap => {
         "desaturado": () => { cmd("Colores eliminados del espectro visual.", { pose: 'sit', filter: 'grayscale(80%)' }); },
         "deseo": () => { cmd("Impulsos primarios superando el umbral lógico.", { pose: 'happy', anim: 'latido', overlay: 'rgba(255,0,0,0.2)' }); },
         "desnudo": () => { triggerNSFW(logEl); },
-        "dia": () => { cmd("Luz solar detectada. Entorno iluminado.", { pose: 'subject', bgColor: '#fff', bloom: 2 }); },
+        "dia": () => { cmd("Luz solar detectada. Entorno iluminado.", { pose: 'subject', hora: 'dia', bloom: 2 }); },
         "diablo": () => { updateStat('happiness', -30); cmd("Nivel máximo de inestabilidad y hostilidad.", { pose: 'overload', overlay: 'rgba(255,0,0,0.4)', particles: 'fuego', shadowColor: '#f00' }); Sfx.fire(5, 0.6); },
         "dios": () => { cmd("Omnipotencia temporal. Reglas físicas suspendidas.", { pose: 'meditating', shadowColor: '#fff', anim: 'flotar', bloom: 4 }); Sfx.play(1000, 'sine', 5, 0.1); },
         "divinidad": () => { cmd("Presencia etérea de orden superior.", { pose: 'meditating', filter: 'brightness(5)', anim: 'flotar' }); },
@@ -327,9 +328,9 @@ export const getCmds = (logEl: HTMLElement): CommandMap => {
         "negativo": () => { cmd("Paleta de colores invertida matemáticamente.", { pose: 'pose', filter: 'invert(100%)' }); },
         "neon": () => { cmd("Luces de ciudad futurista brillante.", { pose: 'pose', bgColor: '#000', filter: 'contrast(2)' }); },
         "niebla": () => { cmd("Opacidad ambiental alta. Visión bloqueada.", { pose: 'secret', envParticles: 'nieve' }); Sfx.wind(5, 0.3); },
-        "nieve": () => { cmd("Hielo fino cayendo. Frio simulado.", { pose: 'protection', envParticles: 'nieve' }); Sfx.wind(5, 0.3); },
+        "nieve": () => { cmd("Hielo fino cayendo. Frio simulado.", { escenario: 'nieve', pose: 'protection', envParticles: 'nieve' }); Sfx.wind(5, 0.3); },
         "nitido": () => { cmd("Texturas cargadas en 4K. Contraste alto.", { pose: 'subject', filter: 'contrast(1.5) saturate(1.5)' }); },
-        "noche": () => { cmd("Simulación sin luz principal.", { pose: 'collapsed', bgColor: '#000', filter: 'brightness(0.3)' }); },
+        "noche": () => { cmd("Simulación sin luz principal.", { pose: 'collapsed', hora: 'noche' }); },
         "normal": () => { resetState(logEl); },
         "nuclear": () => { updateStat('energy', -40); cmd("Radiación gamma letal destruyendo cámaras.", { pose: 'protection', shadowColor: '#0f0', anim: 'terremoto', aberration: 5, bloom: 3 }); Sfx.noise(5, 0.5); },
         "ocean": () => { cmd("Inmersión en aguas profundas.", { pose: 'falling', envParticles: 'lluvia', overlay: 'rgba(0,30,100,0.5)', anim: 'flotar', distortion: 2 }); Sfx.noise(5, 0.15, 'lowpass', 300); },
@@ -482,8 +483,8 @@ export const getCmds = (logEl: HTMLElement): CommandMap => {
         "cantar": () => { updateStat('happiness', 15); cmd("Vocalización activa.", { pose: 'happy', anim: 'vibracion' }); Sfx.play(400, 'sine', 1, 0.2); },
         "llover": () => { cmd("Precipitación detectada.", { pose: 'sit', envParticles: 'lluvia' }); Sfx.rain(5, 0.6); },
         "nevar": () => { cmd("Nevada activa.", { pose: 'protection', envParticles: 'nieve' }); Sfx.wind(5, 0.4); },
-        "amanecer": () => { updateStat('happiness', 10); cmd("Inicio del día.", { pose: 'meditating', bgColor: '#ff7e5f', filter: 'saturate(150%)' }); Sfx.play(440, 'sine', 2, 0.1); },
-        "medianoche": () => { cmd("Punto más oscuro del día.", { pose: 'secret', bgColor: '#000' }); },
+        "amanecer": () => { updateStat('happiness', 10); cmd("Inicio del día.", { pose: 'meditating', hora: 'amanecer' }); Sfx.play(440, 'sine', 2, 0.1); },
+        "medianoche": () => { cmd("Punto más oscuro del día.", { pose: 'secret', hora: 'noche' }); },
         "estrella": () => { cmd("Astros visibles.", { pose: 'meditating', envParticles: 'estrellas', bgLayer: 'void' }); },
         "nube": () => { cmd("Entorno nuboso.", { pose: 'subject', envParticles: 'nieve' }); },
         "trueno": () => { cmd("Rayo detectado.", { pose: 'overload', bloom: 5 }); Sfx.thunder(3); },
@@ -570,6 +571,34 @@ export const getCmds = (logEl: HTMLElement): CommandMap => {
         "orbitar": () => { cmd("Gravedad alrededor de un centro invisible.", { pose: 'subject', anim: 'orbitar', envParticles: 'estrellas' }); Sfx.wind(3, 0.1); },
         "espiral": () => { cmd("El cuerpo dibuja una espiral.", { pose: 'pose', anim: 'espiral', envParticles: 'magia' }); Sfx.playChord([392, 523, 659], 'sine', 3, 0.06); },
         "derretir": () => { cmd("Los bordes pierden forma.", { pose: 'squat', anim: 'derretir', overlay: 'rgba(120,180,255,0.15)' }); Sfx.play(180, 'sawtooth', 1, 0.08, 60); },
+        "despejado": () => { cmd("Cielo despejado. Sin partículas ambientales.", { pose: 'subject', envParticles: 'none' }); },
+
+        // --- AFINIDADES ---
+        "ignicion": () => {
+            if (afinidadActual() !== 'fuego') {
+                cmd("La ignición solo responde a la afinidad Fuego.", { pose: 'worried', anim: 'vibracion' });
+                return;
+            }
+            cmd("IGNICIÓN: el núcleo de fuego despierta.", { pose: 'overload', particles: 'fuego', anim: 'caos', bloom: 4, escenario: 'volcan', hora: 'atardecer' });
+            Sfx.fire(6, 0.9);
+        },
+        "tsunami": () => {
+            if (afinidadActual() !== 'agua') {
+                cmd("El tsunami solo responde a la afinidad Agua.", { pose: 'worried', anim: 'vibracion' });
+                return;
+            }
+            cmd("TSUNAMI: la marea lo cubre todo.", { pose: 'disjointed', particles: 'burbujas', envParticles: 'lluvia', escenario: 'playa', anim: 'tornado', distortion: 5, hora: 'noche' });
+            Sfx.wind(6, 0.8);
+            Sfx.rain(6, 0.7);
+        },
+        "sinapsis": () => {
+            if (afinidadActual() !== 'mente') {
+                cmd("La sinapsis solo responde a la afinidad Mente.", { pose: 'worried', anim: 'vibracion' });
+                return;
+            }
+            cmd("SINAPSIS: el sistema piensa más rápido que el cuerpo.", { pose: 'secret', envParticles: 'datos', anim: 'glitch', bloom: 3, filter: 'hue-rotate(180deg)', hora: 'noche' });
+            Sfx.playChord([220, 330, 440, 660, 880], 'sine', 4, 0.1);
+        },
 
     };
 };

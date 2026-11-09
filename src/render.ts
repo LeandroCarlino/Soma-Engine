@@ -259,6 +259,35 @@ const getTintedImage = (frame: FrameRect, tint: string): HTMLCanvasElement => {
 
 const lerp = (start: number, end: number, factor: number): number => start + (end - start) * factor;
 
+const aplicarHora = (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    hora: 'dia' | 'atardecer' | 'noche' | 'amanecer',
+): void => {
+    if (hora === 'dia') return;
+
+    ctx.save();
+    const gradiente = ctx.createLinearGradient(0, 0, 0, h);
+
+    if (hora === 'atardecer') {
+        gradiente.addColorStop(0, 'rgba(255,120,60,0.22)');
+        gradiente.addColorStop(0.55, 'rgba(255,80,40,0.13)');
+        gradiente.addColorStop(1, 'rgba(40,10,60,0.32)');
+    } else if (hora === 'noche') {
+        gradiente.addColorStop(0, 'rgba(10,20,60,0.45)');
+        gradiente.addColorStop(1, 'rgba(0,0,10,0.68)');
+    } else {
+        gradiente.addColorStop(0, 'rgba(120,180,255,0.20)');
+        gradiente.addColorStop(0.5, 'rgba(255,170,140,0.18)');
+        gradiente.addColorStop(1, 'rgba(255,220,180,0.12)');
+    }
+
+    ctx.fillStyle = gradiente;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+};
+
 // --- Sprites de partículas ---
 // Un gradiente radial cacheado se ve mucho más orgánico que decenas de
 // círculos planos, y dibujarlo con "lighter" da el brillo del fuego.
@@ -689,6 +718,7 @@ export const startRenderLoop = (
         }
 
         drawEscenario(srcCtx, srcCanvas.width, srcCanvas.height, state.escenario || 'ninguno', frame);
+        aplicarHora(srcCtx, srcCanvas.width, srcCanvas.height, state.hora);
 
         const currentFrame = getCurrentFrame(state.pose, deltaTime);
         const aspect = currentFrame.sw / currentFrame.sh;

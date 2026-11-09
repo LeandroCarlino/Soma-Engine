@@ -157,6 +157,10 @@ SINONIMOS = {
     "orbitar": ["orbita", "girar", "alrededor"],
     "espiral": ["helice", "remolino", "vortice"],
     "derretir": ["derretido", "fundir", "liquido"],
+    "despejado": ["cielo", "limpio", "claro"],
+    "ignicion": ["encender", "fuego", "llama"],
+    "tsunami": ["ola", "marea", "agua"],
+    "sinapsis": ["mente", "neurona", "datos"],
     "espejo": ["reflejo", "duplicado", "yo"],
     "holograma": ["holografico", "proyeccion", "luz"],
     "silueta": ["sombra", "contorno", "negro"],
@@ -170,7 +174,7 @@ SIN_CUERPO = {
     "sexo": "Activa la interacción NSFW censurada.",
 }
 
-TAGS_INTERES = ("pose", "anim", "particles", "envParticles", "escenario", "bgLayer", "filter", "tint", "fx")
+TAGS_INTERES = ("pose", "anim", "particles", "envParticles", "escenario", "bgLayer", "filter", "tint", "fx", "hora")
 
 
 def limpiar_texto(texto):

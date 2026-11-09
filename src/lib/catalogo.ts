@@ -1094,7 +1094,7 @@ export const CATALOGO: Record<string, EntradaCatalogo> = {
     categoria: "alfabeto",
     descripcion: "Luz dorada del ocaso bañando todo.",
     sinonimos: [],
-    tags: ["alfabeto", "pose:meditating", "filter:sepia(0.5) saturate(150%)", "audio"],
+    tags: ["alfabeto", "pose:meditating", "hora:atardecer", "audio"],
   },
   "aura": {
     id: "aura",
@@ -1150,7 +1150,7 @@ export const CATALOGO: Record<string, EntradaCatalogo> = {
     categoria: "alfabeto",
     descripcion: "Entorno vegetal. Relajación simulada activa.",
     sinonimos: ["arboles", "naturaleza", "selva"],
-    tags: ["alfabeto", "pose:meditating", "envParticles:hojas", "audio"],
+    tags: ["alfabeto", "pose:meditating", "envParticles:hojas", "escenario:bosque", "audio"],
   },
   "bug": {
     id: "bug",
@@ -1318,7 +1318,7 @@ export const CATALOGO: Record<string, EntradaCatalogo> = {
     categoria: "alfabeto",
     descripcion: "Luz solar detectada. Entorno iluminado.",
     sinonimos: [],
-    tags: ["alfabeto", "pose:subject"],
+    tags: ["alfabeto", "pose:subject", "hora:dia"],
   },
   "diablo": {
     id: "diablo",
@@ -1969,7 +1969,7 @@ export const CATALOGO: Record<string, EntradaCatalogo> = {
     categoria: "alfabeto",
     descripcion: "Hielo fino cayendo. Frio simulado.",
     sinonimos: ["frio", "invierno", "copos"],
-    tags: ["alfabeto", "pose:protection", "envParticles:nieve", "audio"],
+    tags: ["alfabeto", "pose:protection", "envParticles:nieve", "escenario:nieve", "audio"],
   },
   "nitido": {
     id: "nitido",
@@ -1983,7 +1983,7 @@ export const CATALOGO: Record<string, EntradaCatalogo> = {
     categoria: "alfabeto",
     descripcion: "Simulación sin luz principal.",
     sinonimos: [],
-    tags: ["alfabeto", "pose:collapsed", "filter:brightness(0.3)"],
+    tags: ["alfabeto", "pose:collapsed", "hora:noche"],
   },
   "normal": {
     id: "normal",
@@ -3026,14 +3026,14 @@ export const CATALOGO: Record<string, EntradaCatalogo> = {
     categoria: "extra",
     descripcion: "Inicio del día.",
     sinonimos: [],
-    tags: ["extra", "pose:meditating", "filter:saturate(150%)", "stats", "audio"],
+    tags: ["extra", "pose:meditating", "hora:amanecer", "stats", "audio"],
   },
   "medianoche": {
     id: "medianoche",
     categoria: "extra",
     descripcion: "Punto más oscuro del día.",
     sinonimos: [],
-    tags: ["extra", "pose:secret"],
+    tags: ["extra", "pose:secret", "hora:noche"],
   },
   "estrella": {
     id: "estrella",
@@ -3621,7 +3621,35 @@ export const CATALOGO: Record<string, EntradaCatalogo> = {
     categoria: "fase2",
     descripcion: "Los bordes pierden forma.",
     sinonimos: ["derretido", "fundir", "liquido"],
-    tags: ["fase2", "pose:squat", "anim:derretir", "particles:rayos", "envParticles:lluvia", "escenario:volcan", "filter:hue-rotate(180deg)", "fx:espejo", "stats", "audio"],
+    tags: ["fase2", "pose:squat", "anim:derretir", "audio"],
+  },
+  "despejado": {
+    id: "despejado",
+    categoria: "fase2",
+    descripcion: "Cielo despejado. Sin partículas ambientales.",
+    sinonimos: ["cielo", "limpio", "claro"],
+    tags: ["fase2", "pose:subject"],
+  },
+  "ignicion": {
+    id: "ignicion",
+    categoria: "alfabeto",
+    descripcion: "La ignición solo responde a la afinidad Fuego.",
+    sinonimos: ["encender", "fuego", "llama"],
+    tags: ["alfabeto", "pose:worried", "anim:vibracion", "particles:fuego", "escenario:volcan", "hora:atardecer", "audio"],
+  },
+  "tsunami": {
+    id: "tsunami",
+    categoria: "alfabeto",
+    descripcion: "El tsunami solo responde a la afinidad Agua.",
+    sinonimos: ["ola", "marea", "agua"],
+    tags: ["alfabeto", "pose:worried", "anim:vibracion", "particles:burbujas", "envParticles:lluvia", "escenario:playa", "hora:noche", "audio"],
+  },
+  "sinapsis": {
+    id: "sinapsis",
+    categoria: "alfabeto",
+    descripcion: "La sinapsis solo responde a la afinidad Mente.",
+    sinonimos: ["mente", "neurona", "datos"],
+    tags: ["alfabeto", "pose:worried", "anim:vibracion", "particles:rayos", "envParticles:datos", "escenario:volcan", "filter:hue-rotate(180deg)", "fx:espejo", "hora:noche", "stats", "audio"],
   },
 };
 

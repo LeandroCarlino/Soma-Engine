@@ -4,7 +4,7 @@ Simulador interactivo de estados mentales y emocionales con aceleración WebGL.
 
 ## Características
 
-- **510 comandos de texto** en español
+- **514 comandos de texto** en español
 - **27 sinergias** (incluye combinaciones de tres palabras)
 - **10 escenarios procedurales** (ciudad, bosque, playa, espacio, dojo, etc.)
 - **Efectos de post-procesado** (bloom, aberración cromática, distorsión, scanlines)
@@ -16,6 +16,8 @@ Simulador interactivo de estados mentales y emocionales con aceleración WebGL.
 - **Peticiones de SOMA** con temporizador y recompensa
 - **Cadenas** de comandos con efectos propios
 - **Estabilidad y sobrecarga**: los efectos intensos tienen costo
+- **Capas de escenario**: lugar + clima + hora, combinables
+- **3 afinidades elementales** con bonus y comando exclusivo
 - **Director de escena** que evita que los efectos se pisen
 - **Emotes animados** que responden al estado emocional
 - **Física básica** con gravedad y rebotes
@@ -24,6 +26,14 @@ Simulador interactivo de estados mentales y emocionales con aceleración WebGL.
 ## Demo
 
 **https://soma-engine.vercel.app**
+
+## Documentación
+
+- [Estado y handoff](docs/ESTADO.md): qué hay hecho, cómo correrlo, qué falta
+  y cómo retomarlo sin contexto.
+- [Arquitectura y recetas](docs/ARQUITECTURA.md): mapa de archivos, flujo de
+  render, sistemas y cómo agregar comandos, sinergias, cadenas, protocolos,
+  animaciones, fx, afinidades y poses.
 
 ## Instalación
 
@@ -130,7 +140,7 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 
 ### Cuarto pase: exploración (Fase 1)
 
-- **Catálogo de los 510 comandos**, generado desde `diccionario.ts` con
+- **Catálogo de los 514 comandos**, generado desde `diccionario.ts` con
   `scripts/catalogo.py`: categoría, descripción, sinónimos y tags. No
   reescribe los efectos; un test exige una entrada por cada comando.
 - **Ayuda y búsqueda**: `?`, `comandos` o `help` listan las 13 categorías con
@@ -215,6 +225,29 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 - **Bundle**: ~139 kB iniciales (42,8 kB gzip); el catálogo de 91 kB sigue
   cargándose bajo demanda.
 
+### Octavo pase: capas y afinidades (Fase 3)
+
+- **Capas de escenario**: `escenario`, `clima` (`envParticles`) y `hora`
+  (`dia`, `atardecer`, `noche`, `amanecer`) son capas independientes y
+  persisten hasta que otro comando las cambie. `noche` + `bosque` +
+  `lluvia` es una combinación válida. `despejado` limpia el clima.
+- **Hora**: gradiente de color sobre el escenario, sin tocar al personaje:
+  atardecer cálido, noche azulada, amanecer rosado.
+- **Afinidades**: Fuego, Agua y Mente. Cada una define escena inicial,
+  multiplicadores y un comando exclusivo:
+  - **Fuego**: +20% de costo de estabilidad, +15% de puntos, `ignicion`.
+  - **Agua**: −15% de costo, recuperación doble, `tsunami`.
+  - **Mente**: +25% de puntos, `sinapsis`.
+  La afinidad se elige en el panel, persiste y se muestra en el HUD.
+- **Comandos**: 514 en total (nuevos: `despejado`, `ignicion`, `tsunami`,
+  `sinapsis`).
+- **Tests: 94** (afinidades, capas, estabilidad con multiplicadores y todo
+  lo anterior).
+- **Bundle**: ~142 kB iniciales (43,9 kB gzip); catálogo de 92 kB bajo
+  demanda.
+
+Pendiente de Fase 3: codex, rituales guardables, reto diario y PWA/i18n.
+
 ## Estructura del proyecto
 
 ```
@@ -227,11 +260,14 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 │   ├── state.ts          # Estado global y persistencia
 │   ├── audio.ts          # Sonidos procedurales
 │   ├── types.ts          # Tipos TypeScript
-│   ├── lib/              # catálogo, búsqueda, captura, HUD, protocolos, peticiones, cadenas, estabilidad
+│   ├── lib/              # catálogo, búsqueda, captura, HUD, protocolos, peticiones, cadenas, estabilidad, afinidades
 │   └── test/setup.ts     # Setup de Vitest (localStorage y matchMedia)
 ├── public/
 │   ├── favicon.svg
 │   └── Hikaru/           # Sprites del personaje (WebP)
+├── docs/
+│   ├── ESTADO.md         # Handoff del proyecto
+│   └── ARQUITECTURA.md   # Mapa técnico y recetas
 ├── style.css             # Estilos
 └── index.html            # Entry HTML
 ```

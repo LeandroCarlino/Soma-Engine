@@ -22,6 +22,8 @@ export interface ContextoVista {
   particles: string;
   envParticles: string;
   escenario?: string;
+  hora: string;
+  afinidad: string;
   palabras: number;
   total: number;
   combos: number;
@@ -47,8 +49,8 @@ export function clasificarLinea(texto: string): string {
   return 'normal';
 }
 
-export function describirEfectos(anim: string, particles: string, envParticles: string): string {
-  const activos = [anim, particles, envParticles].filter((valor) => valor && valor !== 'none');
+export function describirEfectos(anim: string, particles: string): string {
+  const activos = [anim, particles].filter((valor) => valor && valor !== 'none');
   return activos.length > 0 ? activos.map((valor) => valor.toUpperCase()).join(' · ') : '—';
 }
 
@@ -118,7 +120,12 @@ export function actualizarContexto(contexto: ContextoVista): void {
 
   escribir('ctx-pose', contexto.pose.toUpperCase());
   escribir('ctx-escenario', (contexto.escenario || 'ninguno').toUpperCase());
-  escribir('ctx-efectos', describirEfectos(contexto.anim, contexto.particles, contexto.envParticles));
+  escribir('ctx-clima', contexto.envParticles && contexto.envParticles !== 'none'
+    ? contexto.envParticles.toUpperCase()
+    : '—');
+  escribir('ctx-hora', contexto.hora.toUpperCase());
+  escribir('ctx-efectos', describirEfectos(contexto.anim, contexto.particles));
+  escribir('ctx-afinidad', contexto.afinidad);
   escribir('hud-discovery', String(contexto.palabras));
   escribir('hud-total', String(contexto.total));
   escribir('hud-combos', String(contexto.combos));
