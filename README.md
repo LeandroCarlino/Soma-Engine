@@ -90,12 +90,35 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
   la página scrollee al arrastrar.
 - **Diálogos**: foco inicial, Tab/Shift+Tab atrapado, cierre con Escape y
   retorno del foco. El input recupera un `:focus-visible` visible.
-- **Tests: 22** (antes 8). Incluyen integridad del diccionario (las 465
+- **Tests: 29** (antes 8). Incluyen integridad del diccionario (las 465
   claves y la ejecución de cada comando), sinergias, timers de `executeCmd`,
-  foco de diálogos, texto y storage.
+  foco de diálogos, HUD/terminal, texto y storage.
 - **Infra**: headers CSP, `nosniff`, `Referrer-Policy` y
   `Permissions-Policy`; cache para `/Hikaru/*` y `/assets/*`; Node 26 fijado
   en `engines`.
+
+### Tercer pase: rediseño visual
+
+- **HUD en DOM**: las stats se dibujaban dentro del canvas, así que no eran
+  accesibles ni se podían estilar. Ahora son un HUD real con barras
+  segmentadas, valores, tendencia (▲/▼), estado vital (`ESTABLE`,
+  `INESTABLE`, `CRÍTICO`), pose, escenario, efectos activos y contador de
+  descubrimientos.
+- **Terminal con historial**: antes el log era una sola línea. Ahora hay un
+  historial scrolleable con timestamps, eco de los comandos escritos y color
+  por tipo de línea (sinergia, error, sistema).
+- **Tres paletas**: fósforo, ámbar y hielo, seleccionables desde el panel y
+  persistidas en `localStorage`. Toda la interfaz usa variables CSS.
+- **Identidad CRT biotech**: barra superior, marco de escenario con esquinas,
+  scanlines, viñeta, panel de control con métricas, pantalla de arranque y
+  toasts de sugerencia.
+- **Móvil**: en vertical el lienzo llena el alto y recorta los lados para que
+  el personaje no quede diminuto; el HUD de contexto se oculta y el panel se
+  apila en una columna.
+- **Audio no bloqueante**: si el navegador bloquea `AudioContext` o
+  `resume()` nunca resuelve, antes la app quedaba en “Cargando recursos”
+  para siempre. Ahora el motor arranca igual y el audio se activa cuando
+  puede.
 
 ## Estructura del proyecto
 
@@ -107,7 +130,7 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 │   ├── state.ts          # Estado global y persistencia
 │   ├── audio.ts          # Sonidos procedurales
 │   ├── types.ts          # Tipos TypeScript
-│   ├── lib/              # Helpers puros (storage, texto, diálogos) + tests
+│   ├── lib/              # Helpers puros (storage, texto, diálogos, HUD) + tests
 │   └── test/setup.ts     # Setup de Vitest (localStorage y matchMedia)
 ├── public/
 │   ├── favicon.svg

@@ -4,6 +4,16 @@ import { getCmds, checkCombos } from './diccionario';
 import { state, physics, target, discoveredWords, discoveredCombos, saveDiscovery } from './state';
 import { palabrasDe } from './lib/texto';
 import { atraparFoco, enfocarPrimero } from './lib/dialogo';
+import { leerJSON, escribirJSON } from './lib/storage';
+import {
+    actualizarContexto,
+    actualizarStats,
+    aplicarTema,
+    formatearTiempo,
+    iniciarTerminal,
+    temaValido,
+    type Tema,
+} from './lib/hud';
 import type { MouseData } from './types';
 
 const srcCanvas = document.getElementById('srcCanvas') as HTMLCanvasElement;
@@ -12,6 +22,31 @@ const gameCanvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
 const input = document.getElementById('cmd') as HTMLInputElement;
 const log = document.getElementById('log') as HTMLElement;
 const tipElement = document.getElementById('tip-container') as HTMLElement;
+
+const historial = document.getElementById('terminal-history');
+const terminal = historial ? iniciarTerminal(log, historial) : null;
+let inicioSesion = performance.now();
+
+// --- Tema de interfaz ---
+const temaInicial = temaValido(leerJSON<string>('soma_tema', 'fosforo'));
+aplicarTema(temaInicial);
+
+const marcarTema = (tema: Tema): void => {
+    document.querySelectorAll<HTMLButtonElement>('.theme-swatch').forEach((boton) => {
+        boton.setAttribute('aria-pressed', String(boton.dataset.tema === tema));
+    });
+};
+
+marcarTema(temaInicial);
+
+document.querySelectorAll<HTMLButtonElement>('.theme-swatch').forEach((boton) => {
+    boton.addEventListener('click', () => {
+        const tema = temaValido(boton.dataset.tema);
+        aplicarTema(tema);
+        escribirJSON('soma_tema', tema);
+        marcarTema(tema);
+    });
+});
 
 const tutorialTips = [
     { cmd: 'feliz', tip: 'Prueba escribir "feliz" para ver una reacción alegre' },
@@ -146,17 +181,25 @@ botonAceptar?.addEventListener('click', async () => {
     if (warningModal) warningModal.classList.add('hidden');
     
     log.innerText = "SOMA: Cargando recursos gráficos...";
-    
+
+    // El contexto se crea dentro del gesto del usuario, pero no se espera:
+    // si el navegador bloquea el audio (o resume() nunca resuelve) la
+    // simulación tiene que arrancar igual.
+    void Sfx.init()
+        .then(() => Sfx.play(440, 'sine', 0.3, 0.1, 880))
+        .catch((e) => console.warn('SOMA: Audio no disponible:', e));
+
     try {
         await loadImages();
-        await Sfx.init();
-        Sfx.play(440, 'sine', 0.3, 0.1, 880);
     } catch (e) {
-        console.warn('SOMA: Error en inicialización:', e);
+        console.warn('SOMA: Error cargando recursos:', e);
     }
     
     input.disabled = false;
     input.focus();
+    inicioSesion = performance.now();
+    const estadoTerminal = document.getElementById('terminal-state');
+    if (estadoTerminal) estadoTerminal.textContent = 'OPERATIVO';
     log.innerText = "SOMA: Entorno operativo. Escribe tu comando.";
     startRenderLoop(srcCanvas, srcCtx, gameCanvas, getMouseData);
     
@@ -166,6 +209,43 @@ botonAceptar?.addEventListener('click', async () => {
 
 const cmds = getCmds(log);
 const totalWords = Object.keys(cmds).length;
+
+// --- Reloj de sesión ---
+const relojes = [
+    document.getElementById('session-clock'),
+    document.getElementById('session-clock-2'),
+];
+
+setInterval(() => {
+    const texto = formatearTiempo((performance.now() - inicioSesion) / 1000);
+    relojes.forEach((reloj) => {
+        if (reloj) reloj.textContent = texto;
+    });
+}, 1000);
+
+// --- HUD: stats y contexto ---
+const statsPrevias = { ...state.stats };
+
+const refrescarHUD = (): void => {
+    actualizarStats(state.stats, statsPrevias);
+    statsPrevias.hunger = state.stats.hunger;
+    statsPrevias.energy = state.stats.energy;
+    statsPrevias.happiness = state.stats.happiness;
+
+    actualizarContexto({
+        pose: state.pose,
+        anim: state.anim,
+        particles: state.particles,
+        envParticles: state.envParticles,
+        escenario: state.escenario,
+        palabras: discoveredWords.size,
+        total: totalWords,
+        combos: discoveredCombos.size,
+    });
+};
+
+refrescarHUD();
+setInterval(refrescarHUD, 250);
 
 const menuBtn = document.getElementById('menu-btn');
 const menuModal = document.getElementById('menu-modal');
@@ -202,6 +282,7 @@ menuBtn?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-close-menu')?.addEventListener('click', cerrarMenu);
+document.getElementById('btn-close-menu-2')?.addEventListener('click', cerrarMenu);
 
 document.getElementById('btn-show-words')?.addEventListener('click', () => {
     const btnShowWords = document.getElementById('btn-show-words');
@@ -258,6 +339,7 @@ input.addEventListener('keydown', (e) => {
         const val = words.join(' ');
         
         if (rawVal !== '') {
+            terminal?.agregar(`> ${rawVal}`, 'cmd');
             commandHistory.unshift(rawVal);
             if (commandHistory.length > 50) commandHistory.pop();
             historyIndex = -1;
