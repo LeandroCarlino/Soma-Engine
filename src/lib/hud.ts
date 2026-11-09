@@ -25,6 +25,8 @@ export interface ContextoVista {
   palabras: number;
   total: number;
   combos: number;
+  cadenas: number;
+  totalCadenas: number;
 }
 
 const $ = (id: string): HTMLElement | null => document.getElementById(id);
@@ -58,8 +60,10 @@ export function temaValido(valor: unknown): Tema {
   return TEMAS.includes(valor as Tema) ? (valor as Tema) : 'fosforo';
 }
 
+type StatId = keyof StatsVista | 'stability';
+
 function actualizarStat(
-  id: keyof StatsVista,
+  id: StatId,
   valor: number,
   anterior: number,
 ): void {
@@ -96,6 +100,16 @@ export function actualizarStats(stats: StatsVista, anterior: StatsVista): void {
   }
 }
 
+export function actualizarEstabilidad(valor: number, anterior: number): void {
+  actualizarStat('stability', valor, anterior);
+
+  const estado = $('vitals-state');
+  if (estado && valor < 30) {
+    estado.textContent = valor <= 0 ? 'SOBRECARGA' : 'INESTABLE';
+    estado.dataset.estado = 'critico';
+  }
+}
+
 export function actualizarContexto(contexto: ContextoVista): void {
   const escribir = (id: string, texto: string): void => {
     const el = $(id);
@@ -108,6 +122,8 @@ export function actualizarContexto(contexto: ContextoVista): void {
   escribir('hud-discovery', String(contexto.palabras));
   escribir('hud-total', String(contexto.total));
   escribir('hud-combos', String(contexto.combos));
+  escribir('hud-cadenas', String(contexto.cadenas));
+  escribir('hud-cadenas-total', String(contexto.totalCadenas));
 }
 
 export interface Terminal {

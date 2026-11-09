@@ -471,6 +471,7 @@ body {
 
 .stat[data-stat="energy"] .stat-fill { background: var(--stat-2); }
 .stat[data-stat="happiness"] .stat-fill { background: var(--stat-3); }
+.stat[data-stat="stability"] .stat-fill { background: var(--warn); }
 
 .stat-track::after {
     content: "";
@@ -824,6 +825,57 @@ body {
 #tip-container.visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* --- Peticiones de SOMA --- */
+
+.peticion {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    z-index: 8;
+    width: min(430px, 80vw);
+    padding: 10px 14px;
+    background: var(--panel);
+    border: 1px solid var(--accent-line);
+    border-left: 2px solid var(--warn);
+    backdrop-filter: blur(8px);
+    transform: translateX(-50%);
+}
+
+.peticion.hidden {
+    display: none;
+}
+
+.peticion-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--warn);
+}
+
+.peticion p {
+    margin: 6px 0 8px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text);
+}
+
+.peticion-barra {
+    height: 4px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.peticion-barra span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: var(--warn);
+    transition: width 0.3s linear;
 }
 
 /* ------------------------------------------------------------
@@ -1284,6 +1336,11 @@ a:focus-visible {
         right: 14px;
         bottom: 14px;
         max-width: min(300px, 78vw);
+    }
+
+    .peticion {
+        bottom: 12px;
+        width: calc(100% - 28px);
     }
 
     #terminal {

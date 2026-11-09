@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   actualizarContexto,
+  actualizarEstabilidad,
   actualizarStats,
   clasificarLinea,
   describirEfectos,
@@ -74,6 +75,24 @@ describe('hud', () => {
     expect(document.getElementById('vitals-state')?.dataset.estado).toBe('inestable');
   });
 
+  it('marca inestable o sobrecarga cuando la estabilidad es baja', () => {
+    document.body.innerHTML = `
+      <span id="vitals-state"></span>
+      <div class="stat">
+        <div id="bar-stability"></div>
+        <span id="val-stability"></span>
+        <span id="trend-stability"></span>
+      </div>
+    `;
+
+    actualizarEstabilidad(20, 100);
+    expect(document.getElementById('vitals-state')?.textContent).toBe('INESTABLE');
+
+    actualizarEstabilidad(0, 20);
+    expect(document.getElementById('vitals-state')?.textContent).toBe('SOBRECARGA');
+    expect(document.getElementById('vitals-state')?.dataset.estado).toBe('critico');
+  });
+
   it('actualiza el contexto del HUD', () => {
     document.body.innerHTML = `
       <b id="ctx-pose"></b>
@@ -82,6 +101,8 @@ describe('hud', () => {
       <span id="hud-discovery"></span>
       <span id="hud-total"></span>
       <span id="hud-combos"></span>
+      <span id="hud-cadenas"></span>
+      <span id="hud-cadenas-total"></span>
     `;
 
     actualizarContexto({
@@ -93,6 +114,8 @@ describe('hud', () => {
       palabras: 12,
       total: 465,
       combos: 2,
+      cadenas: 3,
+      totalCadenas: 8,
     });
 
     expect(document.getElementById('ctx-pose')?.textContent).toBe('HAPPY');
@@ -100,6 +123,8 @@ describe('hud', () => {
     expect(document.getElementById('ctx-efectos')?.textContent).toBe('FLOTAR · FUEGO');
     expect(document.getElementById('hud-discovery')?.textContent).toBe('12');
     expect(document.getElementById('hud-combos')?.textContent).toBe('2');
+    expect(document.getElementById('hud-cadenas')?.textContent).toBe('3');
+    expect(document.getElementById('hud-cadenas-total')?.textContent).toBe('8');
   });
 
   it('agrega comandos y búsquedas clickeables sin duplicar anuncios', async () => {

@@ -2,6 +2,12 @@ import { Sfx } from './audio';
 import type { Pose, Physics, Stats } from './types';
 import { escribirJSON, leerJSON } from './lib/storage';
 import { normalizarTexto } from './lib/texto';
+import {
+    ESTABILIDAD_INICIAL,
+    ESTABILIDAD_TRAS_SOBRECARGA,
+    aplicarCarga,
+    recuperarEstabilidad,
+} from './lib/estabilidad';
 
 export const discoveredWords = new Set<string>(leerJSON<string[]>('soma_words', []));
 export const discoveredCombos = new Set<string>(leerJSON<string[]>('soma_combos', []));
@@ -61,6 +67,10 @@ export const state: Pose & { stats: Stats } = { ...defaults, stats: loadStats() 
 export const target: Pose = { ...defaults };
 export const physics: Physics = { vx: 0, vy: 0, isDragging: false };
 export const activeTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+export const estabilidad = {
+    valor: ESTABILIDAD_INICIAL,
+    sobrecargado: false,
+};
 
 // Bucle de vida (Decay)
 let ticksSinGuardar = 0;
@@ -179,6 +189,31 @@ export const executeCmd = (msg: string, mod: Partial<Pose>, logEl: HTMLElement, 
             delete activeTimers['accion'];
         }, dur);
     }
+
+    estabilidad.valor = aplicarCarga(estabilidad.valor, mod);
+    if (estabilidad.valor <= 0 && !estabilidad.sobrecargado) {
+        estabilidad.sobrecargado = true;
+        activeTimers['sobrecarga'] = setTimeout(() => {
+            delete activeTimers['sobrecarga'];
+            executeCmd(
+                'SOMA: SOBRECARGA. Reiniciando subsistemas...',
+                { pose: 'overload', anim: 'caos', aberration: 10, distortion: 8, bloom: 5 },
+                logEl,
+                4000,
+            );
+            activeTimers['sobrecargaReset'] = setTimeout(() => {
+                estabilidad.valor = ESTABILIDAD_TRAS_SOBRECARGA;
+                estabilidad.sobrecargado = false;
+                delete activeTimers['sobrecargaReset'];
+            }, 4000);
+        }, 0);
+    }
+};
+
+export const recuperarEstabilidadSistema = (): void => {
+    if (!estabilidad.sobrecargado) {
+        estabilidad.valor = recuperarEstabilidad(estabilidad.valor);
+    }
 };
 
 export const triggerNSFW = (logEl: HTMLElement): void => {
@@ -221,5 +256,7 @@ export const resetState = (logEl?: HTMLElement): void => {
     Object.assign(state, defaults);
     physics.vx = 0;
     physics.vy = 0;
+    estabilidad.valor = ESTABILIDAD_INICIAL;
+    estabilidad.sobrecargado = false;
     if (logEl) logEl.innerText = "SOMA: Entorno reiniciado a estado original.";
 };

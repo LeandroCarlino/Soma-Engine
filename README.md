@@ -13,6 +13,9 @@ Simulador interactivo de estados mentales y emocionales con aceleración WebGL.
 - **Partículas ambientales** (lluvia, nieve, hojas, estrellas, datos, aurora)
 - **Fuego, humo y rayos** con sprites aditivos y brillo
 - **Protocolos** con objetivos, puntaje y progreso persistente
+- **Peticiones de SOMA** con temporizador y recompensa
+- **Cadenas** de comandos con efectos propios
+- **Estabilidad y sobrecarga**: los efectos intensos tienen costo
 - **Director de escena** que evita que los efectos se pisen
 - **Emotes animados** que responden al estado emocional
 - **Física básica** con gravedad y rebotes
@@ -192,6 +195,26 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 - **Bundle**: ~132 kB iniciales (40,7 kB gzip); el catálogo de 91 kB sigue
   cargándose solo al pedir ayuda, buscar o ante un typo.
 
+### Séptimo pase: peticiones, cadenas y estabilidad
+
+- **Peticiones de SOMA**: cada 18–29 s pide algo (comer, música, afecto,
+  cambiar de escenario, calma o jugar) y da 12–15 s para responder. El panel
+  muestra el texto y la cuenta regresiva. Cumplir da +12 de ánimo y +25
+  puntos; fallar resta 10.
+- **Cadenas**: 8 secuencias de 3 comandos dentro de una ventana de 8 s
+  (developer, noir, vínculo, elemental, digital, polar, singularidad y
+  estelar). Cada una tiene su efecto, sonido, recompensa y contador
+  persistente en el HUD.
+- **Estabilidad**: cada efecto intenso (bloom, distorsión, clones, partículas,
+  `fx`) consume estabilidad; los comandos calmados la recuperan. Al llegar a
+  0 se dispara una **sobrecarga** con glitch y el sistema vuelve a 35. La
+  barra vive en el bloque de vitales y el estado pasa a `INESTABLE` o
+  `SOBRECARGA`.
+- **Tests: 88** (peticiones, cadenas, estabilidad, protocolos, HUD, director
+  y diccionario).
+- **Bundle**: ~139 kB iniciales (42,8 kB gzip); el catálogo de 91 kB sigue
+  cargándose bajo demanda.
+
 ## Estructura del proyecto
 
 ```
@@ -204,7 +227,7 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 │   ├── state.ts          # Estado global y persistencia
 │   ├── audio.ts          # Sonidos procedurales
 │   ├── types.ts          # Tipos TypeScript
-│   ├── lib/              # catálogo, búsqueda, captura, HUD, protocolos, storage, texto, diálogos
+│   ├── lib/              # catálogo, búsqueda, captura, HUD, protocolos, peticiones, cadenas, estabilidad
 │   └── test/setup.ts     # Setup de Vitest (localStorage y matchMedia)
 ├── public/
 │   ├── favicon.svg

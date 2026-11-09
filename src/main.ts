@@ -1,12 +1,13 @@
 import { Sfx } from './audio';
 import { startRenderLoop, loadImages } from './render';
 import { getCmds, checkCombos } from './diccionario';
-import { state, physics, target, discoveredWords, discoveredCombos, saveDiscovery } from './state';
+import { state, physics, target, discoveredWords, discoveredCombos, saveDiscovery, estabilidad, recuperarEstabilidadSistema, executeCmd, updateStat } from './state';
 import { palabrasDe } from './lib/texto';
 import { atraparFoco, enfocarPrimero } from './lib/dialogo';
 import { leerJSON, escribirJSON } from './lib/storage';
 import {
     actualizarContexto,
+    actualizarEstabilidad,
     actualizarStats,
     aplicarTema,
     formatearTiempo,
@@ -17,6 +18,9 @@ import {
 import { crearCaptura, nombreCaptura } from './lib/captura';
 import { iniciarProtocolos } from './lib/protocolos';
 import { renderProtocolos } from './lib/protocolosHud';
+import { iniciarCadenas } from './lib/cadenas';
+import { iniciarPeticiones, type EventoPeticion } from './lib/peticiones';
+import { renderPeticion } from './lib/peticionesHud';
 import type { MouseData } from './types';
 
 const srcCanvas = document.getElementById('srcCanvas') as HTMLCanvasElement;
@@ -274,6 +278,7 @@ botonAceptar?.addEventListener('click', async () => {
     
     showNextTip();
     setInterval(showNextTip, 90000);
+    iniciarSistemaPeticiones();
 });
 
 const cmds = getCmds(log);
@@ -294,12 +299,17 @@ setInterval(() => {
 
 // --- HUD: stats y contexto ---
 const statsPrevias = { ...state.stats };
+let estabilidadPrevia = estabilidad.valor;
+const cadenas = iniciarCadenas();
 
 const refrescarHUD = (): void => {
     actualizarStats(state.stats, statsPrevias);
     statsPrevias.hunger = state.stats.hunger;
     statsPrevias.energy = state.stats.energy;
     statsPrevias.happiness = state.stats.happiness;
+
+    actualizarEstabilidad(estabilidad.valor, estabilidadPrevia);
+    estabilidadPrevia = estabilidad.valor;
 
     actualizarContexto({
         pose: state.pose,
@@ -310,11 +320,14 @@ const refrescarHUD = (): void => {
         palabras: discoveredWords.size,
         total: totalWords,
         combos: discoveredCombos.size,
+        cadenas: cadenas.descubiertas().size,
+        totalCadenas: cadenas.total(),
     });
 };
 
 refrescarHUD();
 setInterval(refrescarHUD, 250);
+setInterval(recuperarEstabilidadSistema, 1000);
 
 // --- Protocolos ---
 const protocolos = iniciarProtocolos();
@@ -330,6 +343,46 @@ const refrescarProtocolos = (eventos: string[] = []): void => {
 
 refrescarProtocolos();
 setInterval(() => refrescarProtocolos(protocolos.tick(state.stats)), 1000);
+
+// --- Peticiones de SOMA ---
+let peticiones: ReturnType<typeof iniciarPeticiones> | null = null;
+
+function manejarPeticion(evento: EventoPeticion): void {
+    if (evento.tipo === 'nueva') {
+        renderPeticion(evento.peticion);
+        terminal?.agregar(`SOMA: ${evento.peticion.texto}`, 'warn');
+        terminal?.anunciar(`SOMA pide: ${evento.peticion.texto}`);
+        return;
+    }
+
+    if (evento.tipo === 'exito') {
+        updateStat('happiness', 12);
+        protocolos.bonificar(25);
+        refrescarProtocolos();
+        terminal?.agregar(`PETICIÓN CUMPLIDA: ${evento.peticion.texto} (+25 PTS)`, 'synergy');
+        terminal?.anunciar('SOMA: petición cumplida.');
+        Sfx.playChord([523, 659, 784], 'sine', 2, 0.08);
+    } else {
+        updateStat('happiness', -10);
+        terminal?.agregar('PETICIÓN FALLIDA: SOMA se quedó esperando.', 'error');
+        terminal?.anunciar('SOMA: petición fallida.');
+        Sfx.play(140, 'sawtooth', 0.6, 0.06);
+    }
+
+    renderPeticion(peticiones?.actual() ?? null);
+}
+
+function iniciarSistemaPeticiones(): void {
+    if (peticiones) return;
+    peticiones = iniciarPeticiones();
+
+    setInterval(() => {
+        if (!peticiones) return;
+        const eventos = peticiones.tick();
+        for (const evento of eventos) manejarPeticion(evento);
+        renderPeticion(peticiones.actual());
+    }, 1000);
+}
 
 async function mostrarResultados(consulta: string): Promise<void> {
     if (!terminal) return;
@@ -593,6 +646,31 @@ input.addEventListener('keydown', (e) => {
             escenario: state.escenario,
         });
         refrescarProtocolos(eventosProtocolo);
+
+        const resultadoCadena = cadenas.registrar(val);
+        if (resultadoCadena) {
+            const { cadena, nueva } = resultadoCadena;
+            executeCmd(
+                `${cadena.mensaje} (+${cadena.recompensa} PTS)`,
+                cadena.efecto,
+                log,
+                6000,
+            );
+            protocolos.bonificar(cadena.recompensa);
+            refrescarProtocolos();
+            refrescarHUD();
+
+            if (nueva) {
+                terminal?.anunciar(`Cadena descubierta: ${cadena.nombre}`);
+                Sfx.playChord([392, 523, 659, 784], 'sine', 3, 0.1);
+            }
+        }
+
+        if (peticiones) {
+            const eventosPeticion = peticiones.registrar([val, ...words]);
+            for (const evento of eventosPeticion) manejarPeticion(evento);
+            renderPeticion(peticiones.actual());
+        }
 
         input.value = '';
     }

@@ -46,6 +46,7 @@ export interface GestorProtocolos {
   estado: () => EstadoProtocolos;
   actualizar: (entrada: EntradaProtocolos) => string[];
   tick: (stats: Stats) => string[];
+  bonificar: (puntos: number) => void;
   guardar: () => void;
 }
 
@@ -334,6 +335,11 @@ export function iniciarProtocolos(rnd: () => number = Math.random): GestorProtoc
       ticks += 1;
       if (resultado.eventos.length > 0 || ticks % 5 === 0) guardar();
       return resultado.eventos;
+    },
+    bonificar: (puntos) => {
+      if (!Number.isFinite(puntos) || puntos <= 0) return;
+      estado = { ...estado, puntaje: estado.puntaje + Math.round(puntos) };
+      guardar();
     },
     guardar,
   };

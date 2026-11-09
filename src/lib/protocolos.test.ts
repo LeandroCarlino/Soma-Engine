@@ -7,6 +7,7 @@ import {
   crearEstadoInicial,
   crearProtocolo,
   guardarEstado,
+  iniciarProtocolos,
   type EntradaProtocolos,
   type EstadoProtocolos,
   type Protocolo,
@@ -167,5 +168,11 @@ describe('protocolos', () => {
     const recuperado = cargarEstado(() => 0.1);
     expect(recuperado.activos).toHaveLength(3);
     expect(recuperado.puntaje).toBe(0);
+  });
+
+  it('permite bonificar puntos extra', () => {
+    const gestor = iniciarProtocolos(() => 0.2);
+    gestor.bonificar(25);
+    expect(gestor.estado().puntaje).toBe(25);
   });
 });

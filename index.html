@@ -104,6 +104,12 @@
                         <span class="stat-value" id="val-happiness">100</span>
                         <span class="stat-trend" id="trend-happiness">·</span>
                     </div>
+                    <div class="stat" data-stat="stability">
+                        <span class="stat-label">ESTABILIDAD</span>
+                        <div class="stat-track"><div class="stat-fill" id="bar-stability" style="width:100%"></div></div>
+                        <span class="stat-value" id="val-stability">100</span>
+                        <span class="stat-trend" id="trend-stability">·</span>
+                    </div>
                 </div>
 
                 <div class="hud-block hud-context">
@@ -112,6 +118,7 @@
                     <div class="hud-row"><span>POSE</span><b id="ctx-pose">SUBJECT</b></div>
                     <div class="hud-row"><span>EFECTOS</span><b id="ctx-efectos">—</b></div>
                     <div class="hud-row"><span>ARCHIVO</span><b><span id="hud-discovery">0</span>/<span id="hud-total">0</span> · <span id="hud-combos">0</span> SIN</b></div>
+                    <div class="hud-row"><span>CADENAS</span><b><span id="hud-cadenas">0</span>/<span id="hud-cadenas-total">0</span></b></div>
                 </div>
 
                 <div class="hud-block hud-protocols">
@@ -121,6 +128,12 @@
             </div>
 
             <div id="tip-container" aria-live="polite"></div>
+
+            <div id="peticion" class="peticion hidden">
+                <div class="peticion-head"><span>PETICIÓN DE SOMA</span><span id="peticion-tiempo">12s</span></div>
+                <p id="peticion-texto"></p>
+                <div class="peticion-barra"><span id="peticion-progreso"></span></div>
+            </div>
         </section>
 
         <section id="terminal" aria-label="Terminal de SOMA">
