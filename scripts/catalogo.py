@@ -23,6 +23,7 @@ SECCIONES = [
     ("ALFABETO A-Z ORIGINAL (RESTAURADO)", "alfabeto", "Vocabulario A–Z", "El diccionario base, ordenado de la A a la Z."),
     ("ESCENARIOS", "escenarios", "Escenarios", "Lugares a los que SOMA puede viajar."),
     ("ESTADOS Y ACCIONES EXTRA", "extra", "Estados y acciones", "Reacciones y acciones adicionales."),
+    ("EXPANSION FASE 2", "fase2", "Expansión Fase 2", "Nuevos comandos, animaciones y variantes de Hikaru."),
 ]
 
 MAPA_SECCION = {nombre: (cid, nombre_ui, desc) for nombre, cid, nombre_ui, desc in SECCIONES}
@@ -110,6 +111,55 @@ SINONIMOS = {
     "normal": ["restaurar", "base", "reiniciar"],
     "reset": ["reiniciar", "limpiar", "resetear"],
     "sexo": ["nsfw", "adulto", "censurado"],
+    # Fase 2
+    "ternura": ["carino", "afecto", "suave"],
+    "ansiedad": ["nervios", "angustia", "panic"],
+    "calma": ["relax", "paz", "tranquilidad"],
+    "duelo": ["luto", "pena", "perdida"],
+    "cuervo": ["pajaro", "negro", "augurio"],
+    "ballena": ["oceano", "gigante", "marina"],
+    "kraken": ["pulpo", "monstruo", "abismo"],
+    "unicornio": ["magia", "fantasia", "mitico"],
+    "chocolate": ["dulce", "cacao"],
+    "vino": ["copa", "alcohol", "uva"],
+    "aurora": ["cielo", "luces", "boreal"],
+    "eclipse": ["sol", "luna", "oscuridad"],
+    "codigo": ["programa", "software", "dev"],
+    "android": ["robot", "maquina", "ia"],
+    "memoria": ["recuerdo", "recordar", "mente"],
+    "orden": ["equilibrio", "control", "disciplina"],
+    "realidad": ["verdad", "mundo", "existir"],
+    "ficcion": ["fantasia", "invento", "relato"],
+    "alma": ["espiritu", "esencia", "interior"],
+    "espiritu": ["alma", "fantasma", "etereo"],
+    "abrazo": ["abrazar", "mimos", "afecto"],
+    "susurro": ["secreto", "silencio", "voz baja"],
+    "dimension": ["portal", "universo", "plano"],
+    "origen": ["comienzo", "inicio", "nacimiento"],
+    "destino": ["futuro", "sino", "camino"],
+    "suerte": ["azar", "fortuna", "loteria"],
+    "llanto": ["llorar", "lagrimas", "pena"],
+    "yo": ["identidad", "ego", "self", "reflejo"],
+    "humano": ["persona", "humanidad"],
+    "estela": ["huella", "rastro", "cometa"],
+    "zoom": ["acercar", "primer plano", "lente"],
+    "termica": ["calor", "camara", "infrarrojo"],
+    "primer plano": ["zoom", "closeup", "cara"],
+    "multiplicidad": ["clones", "copias", "varios"],
+    "marea": ["ola", "mar", "subida"],
+    "glaciar": ["hielo", "frio", "montana"],
+    "meteorito": ["asteroide", "espacio", "impacto"],
+    "constelacion": ["estrellas", "cielo", "galaxia"],
+    "laberinto": ["confusion", "camino", "paredes"],
+    "umbral": ["puerta", "limite", "entrada"],
+    "caminar": ["andar", "paso", "caminata"],
+    "girar": ["rotar", "giro", "rotacion"],
+    "orbitar": ["orbita", "girar", "alrededor"],
+    "espiral": ["helice", "remolino", "vortice"],
+    "derretir": ["derretido", "fundir", "liquido"],
+    "espejo": ["reflejo", "duplicado", "yo"],
+    "holograma": ["holografico", "proyeccion", "luz"],
+    "silueta": ["sombra", "contorno", "negro"],
 }
 
 SIN_CUERPO = {
@@ -120,7 +170,7 @@ SIN_CUERPO = {
     "sexo": "Activa la interacción NSFW censurada.",
 }
 
-TAGS_INTERES = ("pose", "anim", "particles", "envParticles", "escenario", "bgLayer", "filter", "tint")
+TAGS_INTERES = ("pose", "anim", "particles", "envParticles", "escenario", "bgLayer", "filter", "tint", "fx")
 
 
 def limpiar_texto(texto):

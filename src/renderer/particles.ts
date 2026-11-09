@@ -128,6 +128,19 @@ export const drawParticles = (ctx: CanvasRenderingContext2D, frame: number) => {
         if (p.type === 'datos') {
             ctx.font = '16px monospace';
             ctx.fillText(Math.random() > 0.5 ? '1' : '0', p.x, p.y);
+        } else if (p.type === 'lluvia') {
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x - 3, p.y + 18);
+            ctx.stroke();
+        } else if (p.type === 'chispas') {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, 2, 5);
+            ctx.restore();
         } else if (p.type === 'hojas' || p.type === 'petalos') {
             ctx.beginPath();
             // Rotate leaf/petal based on time

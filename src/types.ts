@@ -5,11 +5,13 @@ export type PoseType =
 export type AnimType = 
     | 'none' | 'flotar' | 'latido' | 'caos' | 'terremoto' | 'glitch' | 'drift' | 'reloj' 
     | 'tornado' | 'gelatina' | 'vibracion' | 'magnetico' | 'repeler' | 'rebote' | 'respirar' 
-    | 'sacudir' | 'balanceo';
+    | 'sacudir' | 'balanceo'
+    | 'caminar' | 'saltar' | 'girar' | 'orbitar' | 'espiral' | 'derretir';
 
 export type ParticleType = 'none' | 'fuego' | 'rayos' | 'humo' | 'chispas' | 'burbujas' | 'magia';
-export type EnvParticleType = 'none' | 'lluvia' | 'nieve' | 'hojas' | 'datos' | 'estrellas' | 'ceniza' | 'petalos';
+export type EnvParticleType = 'none' | 'lluvia' | 'nieve' | 'hojas' | 'datos' | 'estrellas' | 'ceniza' | 'petalos' | 'aurora';
 export type BgLayerType = 'none' | 'grid' | 'void';
+export type EfectoHikaru = 'none' | 'espejo' | 'holograma' | 'silueta' | 'termica' | 'estela';
 export type EscenarioType = 
     | 'ninguno' | 'ciudad' | 'bosque' | 'playa' | 'espacio' | 'dojo' | 'laboratorio' 
     | 'templo' | 'submarino' | 'volcan' | 'nieve';
@@ -44,6 +46,7 @@ export interface Pose {
     filter?: string;
     tint?: string;
     escenario?: EscenarioType;
+    fx: EfectoHikaru;
 }
 
 export interface Physics {

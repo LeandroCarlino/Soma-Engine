@@ -49,7 +49,8 @@ export const defaults: Pose = {
     interactive: false,
     filter: '',
     tint: 'none',
-    escenario: 'ninguno'
+    escenario: 'ninguno',
+    fx: 'none'
 };
 
 // --- TAMAGOTCHI LOGIC ---

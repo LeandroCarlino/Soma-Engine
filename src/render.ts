@@ -259,6 +259,49 @@ const getTintedImage = (frame: FrameRect, tint: string): HTMLCanvasElement => {
 
 const lerp = (start: number, end: number, factor: number): number => start + (end - start) * factor;
 
+// --- Sprites de partículas ---
+// Un gradiente radial cacheado se ve mucho más orgánico que decenas de
+// círculos planos, y dibujarlo con "lighter" da el brillo del fuego.
+const crearSpriteRadial = (paradas: Array<[number, string]>, tamano = 64): HTMLCanvasElement => {
+    const canvas = document.createElement('canvas');
+    canvas.width = tamano;
+    canvas.height = tamano;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+
+    const gradiente = ctx.createRadialGradient(
+        tamano / 2, tamano / 2, 0,
+        tamano / 2, tamano / 2, tamano / 2,
+    );
+    for (const [posicion, color] of paradas) gradiente.addColorStop(posicion, color);
+    ctx.fillStyle = gradiente;
+    ctx.fillRect(0, 0, tamano, tamano);
+    return canvas;
+};
+
+let fuegoSprite: HTMLCanvasElement | null = null;
+let humoSprite: HTMLCanvasElement | null = null;
+let overlayCanvas: HTMLCanvasElement | null = null;
+
+const getFuegoSprite = (): HTMLCanvasElement => {
+    fuegoSprite ??= crearSpriteRadial([
+        [0, 'rgba(255,255,220,1)'],
+        [0.22, 'rgba(255,215,90,0.95)'],
+        [0.52, 'rgba(255,110,20,0.6)'],
+        [1, 'rgba(120,20,0,0)'],
+    ]);
+    return fuegoSprite;
+};
+
+const getHumoSprite = (): HTMLCanvasElement => {
+    humoSprite ??= crearSpriteRadial([
+        [0, 'rgba(190,190,190,0.55)'],
+        [0.55, 'rgba(100,100,100,0.2)'],
+        [1, 'rgba(30,30,30,0)'],
+    ]);
+    return humoSprite;
+};
+
 let glContext: WebGLContext | null = null;
 let frame = 0;
 let ripples: Ripple[] = [];
@@ -606,6 +649,36 @@ export const startRenderLoop = (
             case 'balanceo':
                 mRot += Math.sin(frame * 0.05) * 0.3;
                 break;
+            case 'caminar':
+                mOy += Math.abs(Math.sin(frame * 0.12)) * -14 * deltaTime;
+                mOx += Math.sin(frame * 0.12) * 8 * deltaTime;
+                mRot += Math.sin(frame * 0.12) * 0.02;
+                break;
+            case 'saltar': {
+                const salto = Math.abs(Math.sin(frame * 0.07));
+                mOy -= salto * 110 * deltaTime;
+                mSy *= 1 + salto * 0.08;
+                mSx *= 1 - salto * 0.04;
+                break;
+            }
+            case 'girar':
+                mRot += frame * 0.2 * deltaTime;
+                mSx *= Math.cos(frame * 0.08);
+                break;
+            case 'orbitar':
+                mOx += Math.cos(frame * 0.04) * 90 * deltaTime;
+                mOy += Math.sin(frame * 0.04) * 45 * deltaTime;
+                break;
+            case 'espiral':
+                mOx += Math.cos(frame * 0.07) * 70 * deltaTime;
+                mOy += Math.sin(frame * 0.07) * 35 * deltaTime;
+                mRot += 0.03 * deltaTime;
+                break;
+            case 'derretir':
+                mSy *= 0.82 + Math.sin(frame * 0.03) * 0.08;
+                mSx *= 1.18;
+                mOy += 45 * deltaTime;
+                break;
         }
 
         srcCtx.clearRect(0, 0, srcCanvas.width, srcCanvas.height);
@@ -622,7 +695,7 @@ export const startRenderLoop = (
         let h = 450;
         let w = h * aspect;
 
-        if (state.envParticles !== 'none' && state.envParticles !== 'estrellas') {
+        if (state.envParticles !== 'none' && state.envParticles !== 'estrellas' && state.envParticles !== 'aurora') {
             const spawnCount = state.envParticles === 'lluvia' ? 5 :
                               state.envParticles === 'nieve' ? 3 :
                               state.envParticles === 'hojas' ? 2 : 3;
@@ -639,6 +712,24 @@ export const startRenderLoop = (
                 srcCtx.fillRect(sx, sy, Math.random() * 2 + 1, Math.random() * 2 + 1);
             }
             srcCtx.globalAlpha = 1;
+        } else if (state.envParticles === 'aurora') {
+            srcCtx.save();
+            srcCtx.globalCompositeOperation = 'lighter';
+            const colores = ['107,255,176', '89,225,255', '200,140,255'];
+            for (let banda = 0; banda < 3; banda++) {
+                srcCtx.strokeStyle = `rgba(${colores[banda]},0.10)`;
+                srcCtx.lineWidth = 42 + banda * 18;
+                srcCtx.beginPath();
+                for (let x = -40; x <= srcCanvas.width + 40; x += 30) {
+                    const y = srcCanvas.height * 0.3 + banda * 34
+                        + Math.sin(x * 0.004 + frame * 0.012 + banda) * 55
+                        + Math.sin(x * 0.011 + frame * 0.02) * 18;
+                    if (x === -40) srcCtx.moveTo(x, y);
+                    else srcCtx.lineTo(x, y);
+                }
+                srcCtx.stroke();
+            }
+            srcCtx.restore();
         }
 
         if (state.interactive && mouseData.clicked) {
@@ -670,52 +761,244 @@ export const startRenderLoop = (
             }
             srcCtx.globalAlpha = state.alpha;
 
-            if (state.overlay !== 'none') {
-                srcCtx.fillStyle = state.overlay;
-                srcCtx.fillRect(drawX, drawY, w, h);
+            // Dibuja el frame actual, con tinte y overlay solo sobre el
+            // cuerpo (antes el overlay era un rectángulo visible).
+            const dibujarBase = (): void => {
+                const conOverlay = state.overlay && state.overlay !== 'none';
+
+                if (conOverlay) {
+                    overlayCanvas ??= document.createElement('canvas');
+                    overlayCanvas.width = currentFrame.sw;
+                    overlayCanvas.height = currentFrame.sh;
+                    const octx = overlayCanvas.getContext('2d');
+
+                    if (octx) {
+                        octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                        if (state.tint && state.tint !== 'none') {
+                            octx.drawImage(getTintedImage(currentFrame, state.tint), 0, 0);
+                        } else {
+                            octx.drawImage(
+                                currentFrame.source,
+                                currentFrame.sx, currentFrame.sy, currentFrame.sw, currentFrame.sh,
+                                0, 0, currentFrame.sw, currentFrame.sh
+                            );
+                        }
+                        octx.globalCompositeOperation = 'source-atop';
+                        octx.fillStyle = state.overlay;
+                        octx.fillRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                        octx.globalCompositeOperation = 'source-over';
+                        srcCtx.drawImage(overlayCanvas, drawX, drawY, w, h);
+                        return;
+                    }
+                }
+
+                if (state.tint && state.tint !== 'none') {
+                    const tintedSource = getTintedImage(currentFrame, state.tint);
+                    srcCtx.drawImage(tintedSource, drawX, drawY, w, h);
+                } else {
+                    srcCtx.drawImage(
+                        currentFrame.source,
+                        currentFrame.sx, currentFrame.sy, currentFrame.sw, currentFrame.sh,
+                        drawX, drawY, w, h
+                    );
+                }
+            };
+
+            // Estela: copias fantasma detrás del cuerpo.
+            if (state.fx === 'estela') {
+                srcCtx.save();
+                for (let i = 4; i >= 1; i--) {
+                    srcCtx.globalAlpha = state.alpha * 0.09 * i;
+                    srcCtx.translate(-16, -5);
+                    dibujarBase();
+                }
+                srcCtx.restore();
+                srcCtx.globalAlpha = state.alpha;
             }
-            
-            // Draw Subject with potential Tint
-            if (state.tint && state.tint !== 'none') {
-                const tintedSource = getTintedImage(currentFrame, state.tint);
-                srcCtx.drawImage(tintedSource, drawX, drawY, w, h);
+
+            if (state.fx === 'espejo') {
+                srcCtx.translate(drawX + w / 2, 0);
+                srcCtx.scale(-1, 1);
+                srcCtx.translate(-(drawX + w / 2), 0);
+            }
+
+            if (state.fx === 'silueta') {
+                srcCtx.filter = 'brightness(0)';
+                srcCtx.shadowColor = state.shadowColor !== 'transparent' ? state.shadowColor : '#6bffb0';
+                srcCtx.shadowBlur = 28;
+                dibujarBase();
+                srcCtx.filter = 'none';
+                srcCtx.shadowBlur = 0;
+            } else if (state.fx === 'holograma') {
+                srcCtx.filter = 'sepia(1) saturate(2.5) hue-rotate(140deg) brightness(1.4)';
+                srcCtx.globalAlpha = state.alpha * 0.75;
+                dibujarBase();
+                srcCtx.filter = 'none';
+                srcCtx.globalAlpha = 0.18;
+                srcCtx.fillStyle = '#001a1a';
+                for (let sy = drawY; sy < drawY + h; sy += 5) {
+                    srcCtx.fillRect(drawX, sy, w, 1);
+                }
+                srcCtx.globalAlpha = state.alpha;
+            } else if (state.fx === 'termica') {
+                srcCtx.filter = 'sepia(1) saturate(4) hue-rotate(-20deg) contrast(1.4) brightness(1.15)';
+                dibujarBase();
+                srcCtx.filter = 'none';
             } else {
-                srcCtx.drawImage(
-                    currentFrame.source,
-                    currentFrame.sx, currentFrame.sy, currentFrame.sw, currentFrame.sh,
-                    drawX, drawY, w, h
-                );
+                dibujarBase();
             }
-            
+
             drawEmote(srcCtx, drawX, drawY, w, h, frame);
-            
+
             srcCtx.shadowBlur = 0;
+            srcCtx.filter = 'none';
+            srcCtx.globalAlpha = state.alpha;
 
             if (state.particles === 'fuego') {
-                for (let i = 0; i < 50; i++) {
-                    const flicker = Math.random() * 100;
-                    srcCtx.fillStyle = `rgba(255, ${flicker}, 0, 0.8)`;
+                const sprite = getFuegoSprite();
+                srcCtx.save();
+                srcCtx.globalCompositeOperation = 'lighter';
+
+                const centroX = drawX + w / 2;
+                const baseY = drawY + h;
+                const brillo = srcCtx.createRadialGradient(
+                    centroX, drawY + h * 0.7, 10,
+                    centroX, drawY + h * 0.7, w * 0.8,
+                );
+                brillo.addColorStop(0, 'rgba(255,120,20,0.45)');
+                brillo.addColorStop(0.55, 'rgba(255,60,0,0.18)');
+                brillo.addColorStop(1, 'rgba(255,0,0,0)');
+                srcCtx.fillStyle = brillo;
+                srcCtx.fillRect(drawX - w * 0.3, drawY + h * 0.1, w * 1.6, h * 1.0);
+
+                // Base ancha de llamas, para que no sean solo chispas.
+                for (let i = 0; i < 10; i++) {
+                    const x = centroX + Math.sin(frame * 0.03 + i) * w * 0.28;
+                    const y = baseY - h * 0.12 - (i % 3) * 18;
+                    const tamano = (72 + Math.random() * 48) * (w / 250);
+                    srcCtx.globalAlpha = 0.22 + Math.random() * 0.16;
+                    srcCtx.drawImage(sprite, x - tamano / 2, y - tamano / 2, tamano, tamano);
+                }
+
+                for (let i = 0; i < 64; i++) {
+                    const vida = (frame * 0.012 + i * 0.137) % 1;
+                    const x = centroX + Math.sin(frame * 0.05 + i * 2.1) * w * 0.42 * (0.3 + vida * 0.7) + (Math.random() - 0.5) * 10;
+                    const y = baseY - vida * h * 0.7 - Math.random() * 18;
+                    const tamano = (24 + vida * 46) * (0.8 + Math.random() * 0.5) * (w / 250);
+                    srcCtx.globalAlpha = (1 - vida) * 0.8 * (0.7 + Math.random() * 0.3);
+                    srcCtx.drawImage(sprite, x - tamano / 2, y - tamano / 2, tamano, tamano);
+                }
+
+                for (let i = 0; i < 24; i++) {
+                    const vida = (frame * 0.02 + i * 0.11) % 1;
+                    const x = centroX + Math.sin(frame * 0.08 + i * 3.3) * w * 0.5;
+                    const y = baseY - vida * h * 0.8;
+                    srcCtx.globalAlpha = (1 - vida) * 0.9;
+                    srcCtx.fillStyle = `rgba(255,${Math.floor(160 + Math.random() * 80)},40,1)`;
                     srcCtx.beginPath();
-                    srcCtx.arc(drawX + Math.random() * w, drawY + h - (frame * 7 + i * 18) % h, Math.random() * 14, 0, Math.PI * 2);
+                    srcCtx.arc(x, y, 1.5 + Math.random() * 2, 0, Math.PI * 2);
                     srcCtx.fill();
                 }
-            } else if (state.particles === 'rayos') {
-                if (Math.random() > 0.7) {
-                    srcCtx.strokeStyle = '#fff';
-                    srcCtx.lineWidth = 3;
-                    srcCtx.shadowColor = '#0ff';
-                    srcCtx.shadowBlur = 20;
+                srcCtx.restore();
+                srcCtx.globalAlpha = state.alpha;
+            } else if (state.particles === 'humo') {
+                const sprite = getHumoSprite();
+                srcCtx.save();
+                for (let i = 0; i < 26; i++) {
+                    const vida = (frame * 0.006 + i * 0.17) % 1;
+                    const x = drawX + w * 0.5 + Math.sin(frame * 0.02 + i) * w * 0.3 + (Math.random() - 0.5) * 18;
+                    const y = drawY + h * 0.82 - vida * h * 0.8;
+                    const tamano = (28 + vida * 64) * (w / 250);
+                    srcCtx.globalAlpha = (1 - vida) * 0.22;
+                    srcCtx.drawImage(sprite, x - tamano / 2, y - tamano / 2, tamano, tamano);
+                }
+                srcCtx.restore();
+                srcCtx.globalAlpha = state.alpha;
+            } else if (state.particles === 'chispas') {
+                srcCtx.save();
+                srcCtx.globalCompositeOperation = 'lighter';
+                for (let i = 0; i < 40; i++) {
+                    const vida = (frame * 0.02 + i * 0.13) % 1;
+                    const x = drawX + w * 0.5 + Math.sin(frame * 0.06 + i * 1.7) * w * 0.45;
+                    const y = drawY + h * 0.85 - vida * h * 0.9;
+                    srcCtx.globalAlpha = (1 - vida) * 0.8;
+                    srcCtx.strokeStyle = `rgba(255,${Math.floor(200 + Math.random() * 55)},80,1)`;
+                    srcCtx.lineWidth = 1.5;
                     srcCtx.beginPath();
-                    let lx = drawX + Math.random() * w;
-                    let ly = drawY;
-                    srcCtx.moveTo(lx, ly);
-                    for (let j = 0; j < 5; j++) {
-                        lx += (Math.random() - 0.5) * 40;
-                        ly += h / 6;
-                        srcCtx.lineTo(lx, ly);
-                    }
+                    srcCtx.moveTo(x, y);
+                    srcCtx.lineTo(x - 2, y + 9);
                     srcCtx.stroke();
-                    srcCtx.shadowBlur = 0;
+                }
+                srcCtx.restore();
+                srcCtx.globalAlpha = state.alpha;
+            } else if (state.particles === 'magia') {
+                srcCtx.save();
+                srcCtx.globalCompositeOperation = 'lighter';
+                for (let i = 0; i < 36; i++) {
+                    const vida = (frame * 0.01 + i * 0.17) % 1;
+                    const x = drawX + w * 0.5 + Math.sin(frame * 0.03 + i * 2.4) * w * 0.45;
+                    const y = drawY + h * 0.25 + Math.cos(frame * 0.04 + i * 1.3) * h * 0.3 + vida * 50;
+                    srcCtx.globalAlpha = (1 - vida) * 0.85;
+                    srcCtx.fillStyle = `hsl(${(i * 37 + frame) % 360}, 100%, 70%)`;
+                    srcCtx.beginPath();
+                    srcCtx.arc(x, y, 1.5 + Math.random() * 2, 0, Math.PI * 2);
+                    srcCtx.fill();
+                }
+                srcCtx.restore();
+                srcCtx.globalAlpha = state.alpha;
+            } else if (state.particles === 'burbujas') {
+                srcCtx.save();
+                for (let i = 0; i < 24; i++) {
+                    const vida = (frame * 0.01 + i * 0.19) % 1;
+                    const x = drawX + w * 0.5 + Math.sin(frame * 0.02 + i) * w * 0.4;
+                    const y = drawY + h * 0.9 - vida * h * 0.9;
+                    const radio = 3 + (1 - vida) * 8;
+                    srcCtx.globalAlpha = (1 - vida) * 0.6;
+                    srcCtx.strokeStyle = 'rgba(180,230,255,1)';
+                    srcCtx.lineWidth = 1;
+                    srcCtx.beginPath();
+                    srcCtx.arc(x, y, radio, 0, Math.PI * 2);
+                    srcCtx.stroke();
+                    srcCtx.fillStyle = 'rgba(255,255,255,0.35)';
+                    srcCtx.beginPath();
+                    srcCtx.arc(x - radio * 0.3, y - radio * 0.3, radio * 0.22, 0, Math.PI * 2);
+                    srcCtx.fill();
+                }
+                srcCtx.restore();
+                srcCtx.globalAlpha = state.alpha;
+            } else if (state.particles === 'rayos') {
+                if (Math.random() > 0.75) {
+                    srcCtx.save();
+                    srcCtx.globalCompositeOperation = 'lighter';
+                    srcCtx.shadowColor = '#6bd8ff';
+                    srcCtx.shadowBlur = 25;
+
+                    const puntos: Array<[number, number]> = [];
+                    let lx = drawX + w * 0.5 + (Math.random() - 0.5) * w * 0.4;
+                    let ly = drawY - 20;
+                    puntos.push([lx, ly]);
+                    for (let j = 0; j < 7; j++) {
+                        lx += (Math.random() - 0.5) * 50;
+                        ly += (h + 40) / 7;
+                        puntos.push([lx, ly]);
+                    }
+
+                    srcCtx.strokeStyle = 'rgba(200,240,255,0.95)';
+                    srcCtx.lineWidth = 2.5;
+                    srcCtx.beginPath();
+                    srcCtx.moveTo(puntos[0][0], puntos[0][1]);
+                    for (const [px, py] of puntos.slice(1)) srcCtx.lineTo(px, py);
+                    srcCtx.stroke();
+
+                    srcCtx.lineWidth = 1.2;
+                    for (let rama = 0; rama < 3; rama++) {
+                        const [bx, by] = puntos[2 + Math.floor(Math.random() * 4)];
+                        srcCtx.beginPath();
+                        srcCtx.moveTo(bx, by);
+                        srcCtx.lineTo(bx + (Math.random() - 0.5) * 90, by + Math.random() * 60);
+                        srcCtx.stroke();
+                    }
+                    srcCtx.restore();
                 }
             }
 

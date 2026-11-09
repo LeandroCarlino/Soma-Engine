@@ -90,6 +90,21 @@ describe('checkCombos', () => {
   it('reconoce sinergias con palabras ya normalizadas', () => {
     expect(checkCombos(['cafe', 'programar'], crearLog())).toBe('combo_dev');
   });
+
+  it('detecta las sinergias nuevas de dos palabras', () => {
+    expect(checkCombos(['tierra', 'fuego'], crearLog())).toBe('combo_volcan');
+    expect(checkCombos(['nieve', 'aurora'], crearLog())).toBe('combo_aurora_boreal');
+    expect(checkCombos(['yo', 'espejo'], crearLog())).toBe('combo_doppelganger');
+  });
+
+  it('detecta las sinergias de tres palabras', () => {
+    expect(checkCombos(['fuego', 'hielo', 'viento'], crearLog())).toBe(
+      'combo_tormenta_perfecta',
+    );
+    expect(checkCombos(['codigo', 'memoria', 'sueno'], crearLog())).toBe(
+      'combo_conciencia',
+    );
+  });
 });
 
 describe('executeCmd', () => {
@@ -127,5 +142,13 @@ describe('executeCmd', () => {
 
     vi.advanceTimersByTime(6000);
     expect(state.pose).toBe('subject');
+  });
+
+  it('revierte las variantes fx al terminar', () => {
+    executeCmd('prueba', { fx: 'holograma' }, crearLog(), 1000);
+    expect(state.fx).toBe('holograma');
+
+    vi.advanceTimersByTime(1000);
+    expect(state.fx).toBe('none');
   });
 });

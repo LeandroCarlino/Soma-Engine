@@ -4,11 +4,14 @@ Simulador interactivo de estados mentales y emocionales con aceleración WebGL.
 
 ## Características
 
-- **+200 comandos de texto** en español
+- **510 comandos de texto** en español
+- **27 sinergias** (incluye combinaciones de tres palabras)
 - **10 escenarios procedurales** (ciudad, bosque, playa, espacio, dojo, etc.)
 - **Efectos de post-procesado** (bloom, aberración cromática, distorsión, scanlines)
-- **Sistema de sinergias** - combina palabras para efectos especiales
-- **Partículas ambientales** (lluvia, nieve, hojas, estrellas, datos)
+- **23 animaciones** (caminar, saltar, girar, orbitar, espiral, derretir, etc.)
+- **Variantes de Hikaru**: holograma, silueta, térmica, espejo y estela
+- **Partículas ambientales** (lluvia, nieve, hojas, estrellas, datos, aurora)
+- **Fuego, humo y rayos** con sprites aditivos y brillo
 - **Emotes animados** que responden al estado emocional
 - **Física básica** con gravedad y rebotes
 - **Audio procedural** generado con Web Audio API
@@ -77,7 +80,7 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 - **9 comandos con acento eran inalcanzables** (`vórtice`, `relámpago`,
   `parís`, `espía`, `samurái`, `cuántico`, `montaña`, `pequeño`, `sueño`):
   la entrada se normaliza sin acentos, así que la clave nunca coincidía.
-  Ahora las 465 claves están normalizadas y hay un test que lo verifica.
+  Ahora todas las claves están normalizadas y hay un test que lo verifica.
 - **~50 MB de RAM menos**: el spritesheet ya no se corta en 24 canvas por
   pose. Se guarda la imagen original y cada frame se dibuja con su
   rectángulo de origen.
@@ -90,9 +93,9 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
   la página scrollee al arrastrar.
 - **Diálogos**: foco inicial, Tab/Shift+Tab atrapado, cierre con Escape y
   retorno del foco. El input recupera un `:focus-visible` visible.
-- **Tests: 29** (antes 8). Incluyen integridad del diccionario (las 465
-  claves y la ejecución de cada comando), sinergias, timers de `executeCmd`,
-  foco de diálogos, HUD/terminal, texto y storage.
+- **Tests: 29** (antes 8) en ese pase. Incluían integridad del diccionario,
+  ejecución de comandos, sinergias, timers de `executeCmd`, foco, HUD/terminal,
+  texto y storage.
 - **Infra**: headers CSP, `nosniff`, `Referrer-Policy` y
   `Permissions-Policy`; cache para `/Hikaru/*` y `/assets/*`; Node 26 fijado
   en `engines`.
@@ -122,7 +125,7 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 
 ### Cuarto pase: exploración (Fase 1)
 
-- **Catálogo de los 465 comandos**, generado desde `diccionario.ts` con
+- **Catálogo de los 510 comandos**, generado desde `diccionario.ts` con
   `scripts/catalogo.py`: categoría, descripción, sinónimos y tags. No
   reescribe los efectos; un test exige una entrada por cada comando.
 - **Ayuda y búsqueda**: `?`, `comandos` o `help` listan las 13 categorías con
@@ -141,6 +144,30 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
   (34,7 kB gzip).
 - **Tests: 55** (catálogo completo, búsqueda, sugerencias, captura, HUD,
   terminal, diccionario, foco, storage).
+
+### Quinto pase: contenido y efectos
+
+- **510 comandos**: 45 nuevos (ternura, ansiedad, calma, duelo, cuervo,
+  ballena, kraken, unicornio, chocolate, vino, aurora, eclipse, codigo,
+  android, memoria, orden, realidad, ficcion, alma, espiritu, abrazo,
+  susurro, dimension, origen, destino, suerte, llanto, yo, humano, estela,
+  zoom, termica, primer plano, multiplicidad, marea, glaciar, meteorito,
+  constelacion, laberinto, umbral, caminar, girar, orbitar, espiral y
+  derretir).
+- **27 sinergias**: 14 nuevas, incluidas `fuego + hielo + viento` y
+  `codigo + memoria + sueno`.
+- **6 animaciones nuevas**: caminar, saltar, girar, orbitar, espiral y
+  derretir. `saltar` usa una pose en el aire.
+- **Variantes de Hikaru**: holograma, silueta, térmica, espejo, estela,
+  zoom, primer plano y multiplicidad.
+- **Fuego realista**: sprites radiales aditivos, base ancha de llamas,
+  brillo y brasas; humo con sprite suave; rayos con ramificaciones y glow;
+  chispas, magia y burbujas animadas.
+- **Aurora**: nueva partícula ambiental de bandas ondulantes.
+- **Overlay corregido**: el tinte de los comandos ahora se aplica solo a la
+  silueta del cuerpo, no a un rectángulo.
+- **Scanlines** más suaves para no tapar los efectos.
+- **Tests: 58**.
 
 ## Estructura del proyecto
 
