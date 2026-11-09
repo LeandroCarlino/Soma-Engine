@@ -120,9 +120,33 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
   para siempre. Ahora el motor arranca igual y el audio se activa cuando
   puede.
 
+### Cuarto pase: exploración (Fase 1)
+
+- **Catálogo de los 465 comandos**, generado desde `diccionario.ts` con
+  `scripts/catalogo.py`: categoría, descripción, sinónimos y tags. No
+  reescribe los efectos; un test exige una entrada por cada comando.
+- **Ayuda y búsqueda**: `?`, `comandos` o `help` listan las 13 categorías con
+  su cantidad; `buscar <texto>` filtra por nombre, sinónimo, descripción o
+  categoría. Categorías y resultados son clickeables: cargan el comando en el
+  input. La terminal se expande mientras leés y se compacta al ejecutar.
+- **Sugerencias difusas**: si un comando no existe, se compara con los
+  nombres y sinónimos usando distancia de edición, singular/plural y
+  artículos. Muestra hasta 3: `felzi` → “¿Quisiste decir `feliz`?”.
+- **Silencio persistente**: botón en la barra superior y tecla `M`. Controla
+  el gain maestro y se guarda en `localStorage`.
+- **Captura PNG**: comando `capturar` y botón en el panel. Compone el canvas
+  2D con marco, scanlines, escenario, pose, stats y fecha, y descarga el PNG.
+- **Carga diferida**: el catálogo pesa ~82 kB y solo se descarga al pedir
+  ayuda, buscar o ante un typo. El bundle inicial queda en ~111 kB
+  (34,7 kB gzip).
+- **Tests: 55** (catálogo completo, búsqueda, sugerencias, captura, HUD,
+  terminal, diccionario, foco, storage).
+
 ## Estructura del proyecto
 
 ```
+├── scripts/
+│   └── catalogo.py       # Genera src/lib/catalogo.ts desde el diccionario
 ├── src/
 │   ├── main.ts           # Entrada: comandos, menú y eventos
 │   ├── render.ts         # Motor de renderizado (Canvas 2D + WebGL)
@@ -130,7 +154,7 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 │   ├── state.ts          # Estado global y persistencia
 │   ├── audio.ts          # Sonidos procedurales
 │   ├── types.ts          # Tipos TypeScript
-│   ├── lib/              # Helpers puros (storage, texto, diálogos, HUD) + tests
+│   ├── lib/              # catálogo, búsqueda, captura, HUD, storage, texto, diálogos
 │   └── test/setup.ts     # Setup de Vitest (localStorage y matchMedia)
 ├── public/
 │   ├── favicon.svg

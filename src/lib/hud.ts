@@ -112,6 +112,9 @@ export function actualizarContexto(contexto: ContextoVista): void {
 
 export interface Terminal {
   agregar: (texto: string, clase?: string) => void;
+  agregarComando: (id: string, descripcion: string) => void;
+  agregarBusqueda: (etiqueta: string, valor: string, descripcion: string) => void;
+  anunciar: (texto: string) => void;
   detener: () => void;
 }
 
@@ -119,22 +122,16 @@ const MAX_LINEAS = 150;
 
 export function iniciarTerminal(log: HTMLElement, historial: HTMLElement): Terminal {
   let cantidad = 0;
+  let ignorarSiguiente = false;
 
-  const agregar = (texto: string, clase?: string): void => {
-    const limpio = texto.trim();
-    if (!limpio) return;
+  const hora = (): HTMLSpanElement => {
+    const el = document.createElement('span');
+    el.className = 'term-time';
+    el.textContent = formatearTiempo(performance.now() / 1000);
+    return el;
+  };
 
-    const fila = document.createElement('div');
-    fila.className = `term-line term-line--${clase ?? clasificarLinea(limpio)}`;
-
-    const hora = document.createElement('span');
-    hora.className = 'term-time';
-    hora.textContent = formatearTiempo(performance.now() / 1000);
-
-    const cuerpo = document.createElement('span');
-    cuerpo.textContent = limpio;
-
-    fila.append(hora, cuerpo);
+  const insertar = (fila: HTMLElement): void => {
     historial.appendChild(fila);
 
     cantidad++;
@@ -147,11 +144,69 @@ export function iniciarTerminal(log: HTMLElement, historial: HTMLElement): Termi
     if (contador) contador.textContent = String(cantidad);
   };
 
+  const agregar = (texto: string, clase?: string): void => {
+    const limpio = texto.trim();
+    if (!limpio) return;
+
+    const fila = document.createElement('div');
+    fila.className = `term-line term-line--${clase ?? clasificarLinea(limpio)}`;
+
+    const cuerpo = document.createElement('span');
+    cuerpo.textContent = limpio;
+
+    fila.append(hora(), cuerpo);
+    insertar(fila);
+  };
+
+  const agregarAccion = (
+    etiqueta: string,
+    descripcion: string,
+    atributo: 'data-comando' | 'data-buscar',
+    valor: string,
+  ): void => {
+    const fila = document.createElement('div');
+    fila.className = 'term-line term-line--comando';
+
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'term-link';
+    boton.setAttribute(atributo, valor);
+    boton.textContent = etiqueta;
+
+    const texto = document.createElement('span');
+    texto.className = 'term-desc';
+    texto.textContent = ` — ${descripcion}`;
+
+    fila.append(hora(), boton, texto);
+    insertar(fila);
+  };
+
+  const agregarComando = (id: string, descripcion: string): void => {
+    agregarAccion(id, descripcion, 'data-comando', id);
+  };
+
+  const agregarBusqueda = (etiqueta: string, valor: string, descripcion: string): void => {
+    agregarAccion(etiqueta, descripcion, 'data-buscar', valor);
+  };
+
+  const anunciar = (texto: string): void => {
+    if (!texto.trim()) return;
+    // Se usa el live region, pero el texto ya se muestra en la terminal:
+    // el observer no debe duplicarlo como línea.
+    ignorarSiguiente = true;
+    log.textContent = texto;
+  };
+
   if (log.textContent?.trim()) agregar(log.textContent);
 
   let ultimo = log.textContent ?? '';
   const observador = new MutationObserver(() => {
     const texto = log.textContent ?? '';
+    if (ignorarSiguiente) {
+      ignorarSiguiente = false;
+      ultimo = texto;
+      return;
+    }
     if (!texto.trim() || texto === ultimo) return;
     ultimo = texto;
     agregar(texto);
@@ -159,5 +214,5 @@ export function iniciarTerminal(log: HTMLElement, historial: HTMLElement): Termi
 
   observador.observe(log, { childList: true, characterData: true, subtree: true });
 
-  return { agregar, detener: () => observador.disconnect() };
+  return { agregar, agregarComando, agregarBusqueda, anunciar, detener: () => observador.disconnect() };
 }

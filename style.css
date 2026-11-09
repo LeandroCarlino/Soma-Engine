@@ -217,6 +217,42 @@ body {
     box-shadow: inset 0 0 18px var(--accent-soft);
 }
 
+.btn-sonido {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--accent-line);
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 9px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.btn-sonido:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: inset 0 0 18px var(--accent-soft);
+}
+
+.sonido-icon {
+    color: var(--accent);
+    font-size: 14px;
+    line-height: 1;
+}
+
+.btn-sonido.is-muted {
+    color: var(--dim);
+    border-color: var(--dim);
+}
+
+.btn-sonido.is-muted .sonido-icon {
+    color: var(--danger);
+}
+
 .menu-icon {
     font-size: 15px;
     line-height: 1;
@@ -482,6 +518,11 @@ body {
     flex-direction: column;
     background: linear-gradient(180deg, rgba(6, 15, 11, 0.97), rgba(3, 7, 5, 0.99));
     border-top: 1px solid var(--accent-line);
+    transition: height 0.25s ease;
+}
+
+#terminal.expandido {
+    height: clamp(300px, 46vh, 430px);
 }
 
 [data-tema="ambar"] #terminal {
@@ -574,6 +615,31 @@ body {
 .term-line--warn { color: var(--warn); }
 .term-line--error { color: var(--danger); }
 .term-line--cmd { color: var(--accent); }
+.term-line--comando { color: var(--muted); }
+
+.term-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--font);
+    font-size: inherit;
+    letter-spacing: 0.5px;
+    text-transform: none;
+    cursor: pointer;
+}
+
+.term-link:hover {
+    border: 0;
+    background: transparent;
+    color: var(--accent-strong);
+    text-decoration: underline;
+    box-shadow: none;
+}
+
+.term-desc {
+    color: var(--muted);
+}
 
 .term-input-row {
     display: flex;
@@ -1125,6 +1191,10 @@ a:focus-visible {
     #terminal {
         height: clamp(182px, 30vh, 240px);
     }
+
+    #terminal.expandido {
+        height: 55vh;
+    }
 }
 
 @media (max-width: 520px) {
@@ -1134,6 +1204,8 @@ a:focus-visible {
     }
 
     .btn-menu span:first-child { display: none; }
+
+    .sonido-texto { display: none; }
 
     .hud-block {
         min-width: 0;

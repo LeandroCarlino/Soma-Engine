@@ -5,6 +5,8 @@ export const Sfx = {
     masterGain: null as GainNode | null,
     reverbNode: null as ConvolverNode | null,
     isInitialized: false,
+    muted: false,
+    volumen: 0.7,
 
     init(): Promise<void> {
         return new Promise((resolve, reject) => {
@@ -17,7 +19,7 @@ export const Sfx = {
                 this.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
                 
                 this.masterGain = this.ctx.createGain();
-                this.masterGain.gain.value = 0.7;
+                this.masterGain.gain.value = this.muted ? 0 : this.volumen;
                 this.masterGain.connect(this.ctx.destination);
 
                 this.reverbNode = this.ctx.createConvolver();
@@ -200,8 +202,16 @@ export const Sfx = {
     },
 
     setVolume(v: number): void {
+        this.volumen = Math.max(0, Math.min(1, v));
+        if (this.masterGain && !this.muted) {
+            this.masterGain.gain.value = this.volumen;
+        }
+    },
+
+    setMuted(muted: boolean): void {
+        this.muted = muted;
         if (this.masterGain) {
-            this.masterGain.gain.value = Math.max(0, Math.min(1, v));
+            this.masterGain.gain.value = muted ? 0 : this.volumen;
         }
     }
 };

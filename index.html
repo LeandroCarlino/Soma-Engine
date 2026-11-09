@@ -53,6 +53,10 @@
             </div>
         </div>
         <div class="topbar-right">
+            <button id="btn-sonido" class="btn-sonido" type="button" aria-label="Silenciar audio" aria-pressed="false">
+                <span class="sonido-icon" aria-hidden="true">♪</span>
+                <span class="sonido-texto">SONIDO</span>
+            </button>
             <div class="clock"><span class="clock-label">SESIÓN</span><span id="session-clock">00:00</span></div>
             <button id="menu-btn" class="btn-menu" type="button" aria-label="Abrir panel de control" aria-expanded="false" aria-controls="menu-modal">
                 <span>PANEL</span>
@@ -133,7 +137,8 @@
             <div class="term-hints" aria-hidden="true">
                 <span><b>ENTER</b> ejecutar</span>
                 <span><b>↑ ↓</b> historial</span>
-                <span><b>PANEL</b> tema y diccionario</span>
+                <span><b>?</b> ayuda</span>
+                <span><b>M</b> sonido</span>
             </div>
 
             <div id="log" class="sr-only" role="status" aria-live="polite">Motor en espera...</div>
@@ -162,6 +167,13 @@
                     <button type="button" class="theme-swatch" data-tema="fosforo" aria-pressed="true"><span class="swatch-dot"></span>FÓSFORO</button>
                     <button type="button" class="theme-swatch" data-tema="ambar" aria-pressed="false"><span class="swatch-dot"></span>ÁMBAR</button>
                     <button type="button" class="theme-swatch" data-tema="hielo" aria-pressed="false"><span class="swatch-dot"></span>HIELO</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>SALIDA</h3>
+                <div class="panel-actions">
+                    <button id="btn-captura" type="button">CAPTURAR ESCENA (PNG)</button>
                 </div>
             </div>
 

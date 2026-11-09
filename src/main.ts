@@ -14,6 +14,7 @@ import {
     temaValido,
     type Tema,
 } from './lib/hud';
+import { crearCaptura, nombreCaptura } from './lib/captura';
 import type { MouseData } from './types';
 
 const srcCanvas = document.getElementById('srcCanvas') as HTMLCanvasElement;
@@ -24,8 +25,74 @@ const log = document.getElementById('log') as HTMLElement;
 const tipElement = document.getElementById('tip-container') as HTMLElement;
 
 const historial = document.getElementById('terminal-history');
+const terminalEl = document.getElementById('terminal');
 const terminal = historial ? iniciarTerminal(log, historial) : null;
 let inicioSesion = performance.now();
+
+// El catálogo pesa ~80 kB y solo hace falta para ayuda, búsqueda o cuando
+// hay que sugerir un comando. Se carga una vez, la primera vez que se usa.
+type ModuloBusqueda = typeof import('./lib/busqueda');
+let busquedaPromesa: Promise<ModuloBusqueda> | null = null;
+const cargarBusqueda = (): Promise<ModuloBusqueda> => {
+    busquedaPromesa ??= import('./lib/busqueda');
+    return busquedaPromesa;
+};
+
+// Los resultados de ayuda/búsqueda se pueden clickear: un comando se carga
+// en el input y una categoría dispara otra búsqueda.
+historial?.addEventListener('click', (evento) => {
+    const objetivo = evento.target as HTMLElement;
+    const comando = objetivo.closest<HTMLElement>('[data-comando]');
+    if (comando) {
+        input.value = comando.dataset.comando ?? '';
+        input.focus();
+        return;
+    }
+
+    const busqueda = objetivo.closest<HTMLElement>('[data-buscar]');
+    if (busqueda) {
+        void mostrarResultados(busqueda.dataset.buscar ?? '');
+    }
+});
+
+// --- Audio: silencio persistente ---
+const botonSonido = document.getElementById('btn-sonido');
+let mudo = leerJSON<boolean>('soma_mudo', false);
+
+const pintarSonido = (): void => {
+    if (!botonSonido) return;
+    botonSonido.setAttribute('aria-pressed', String(mudo));
+    botonSonido.setAttribute('aria-label', mudo ? 'Activar audio' : 'Silenciar audio');
+    botonSonido.classList.toggle('is-muted', mudo);
+
+    const icono = botonSonido.querySelector('.sonido-icon');
+    if (icono) icono.textContent = mudo ? '✕' : '♪';
+
+    const texto = botonSonido.querySelector('.sonido-texto');
+    if (texto) texto.textContent = mudo ? 'MUDO' : 'SONIDO';
+};
+
+Sfx.setMuted(mudo);
+pintarSonido();
+
+const alternarSonido = (): void => {
+    mudo = !mudo;
+    Sfx.setMuted(mudo);
+    escribirJSON('soma_mudo', mudo);
+    pintarSonido();
+    terminal?.anunciar(mudo ? 'SOMA: audio silenciado.' : 'SOMA: audio activado.');
+};
+
+botonSonido?.addEventListener('click', alternarSonido);
+
+window.addEventListener('keydown', (evento) => {
+    if (evento.key.toLowerCase() !== 'm' || evento.ctrlKey || evento.metaKey || evento.altKey) return;
+    const activo = document.activeElement;
+    if (activo instanceof HTMLInputElement || activo instanceof HTMLTextAreaElement) return;
+    if (document.querySelector('.overlay:not(.hidden)')) return;
+    evento.preventDefault();
+    alternarSonido();
+});
 
 // --- Tema de interfaz ---
 const temaInicial = temaValido(leerJSON<string>('soma_tema', 'fosforo'));
@@ -247,6 +314,77 @@ const refrescarHUD = (): void => {
 refrescarHUD();
 setInterval(refrescarHUD, 250);
 
+async function mostrarResultados(consulta: string): Promise<void> {
+    if (!terminal) return;
+
+    terminalEl?.classList.add('expandido');
+    const { buscarComandos } = await cargarBusqueda();
+    const resultados = buscarComandos(consulta, 20);
+    if (resultados.length === 0) {
+        terminal.agregar(`Sin resultados para "${consulta}". Probá con otra palabra.`, 'error');
+        terminal.anunciar(`SOMA: sin resultados para ${consulta}.`);
+        return;
+    }
+
+    terminal.agregar(`Resultados para "${consulta}" (${resultados.length}):`, 'soma');
+    for (const entrada of resultados) {
+        terminal.agregarComando(entrada.id, entrada.descripcion);
+    }
+    terminal.anunciar(`SOMA: ${resultados.length} resultados para ${consulta}.`);
+}
+
+async function mostrarAyuda(consulta: string): Promise<void> {
+    if (!terminal) return;
+
+    terminalEl?.classList.add('expandido');
+
+    if (consulta) {
+        await mostrarResultados(consulta);
+        return;
+    }
+
+    const { resumenCategorias, META_COMANDOS } = await cargarBusqueda();
+
+    terminal.agregar('SOMA: comandos por categoría. Click en una o usá "buscar <texto>".', 'soma');
+    for (const categoria of resumenCategorias()) {
+        terminal.agregarBusqueda(
+            `${categoria.nombre} (${categoria.cantidad})`,
+            categoria.id,
+            categoria.descripcion,
+        );
+    }
+
+    terminal.agregar('Sistema:', 'soma');
+    for (const meta of META_COMANDOS) {
+        terminal.agregarComando(meta.id, meta.descripcion);
+    }
+
+    terminal.anunciar('SOMA: ayuda mostrada en la terminal.');
+
+    const primeraCategoria = historial?.querySelector<HTMLElement>('[data-buscar]');
+    if (historial && primeraCategoria) {
+        historial.scrollTop = Math.max(0, primeraCategoria.offsetTop - historial.offsetTop - 6);
+    }
+}
+
+function capturarEscena(): void {
+    const captura = crearCaptura(srcCanvas, {
+        escenario: state.escenario ?? 'ninguno',
+        pose: state.pose,
+        stats: state.stats,
+    });
+
+    const enlace = document.createElement('a');
+    enlace.href = captura.toDataURL('image/png');
+    enlace.download = nombreCaptura();
+    enlace.click();
+
+    terminal?.agregar(`SOMA: captura guardada como ${enlace.download}.`, 'soma');
+    terminal?.anunciar('SOMA: captura guardada.');
+}
+
+document.getElementById('btn-captura')?.addEventListener('click', capturarEscena);
+
 const menuBtn = document.getElementById('menu-btn');
 const menuModal = document.getElementById('menu-modal');
 
@@ -310,6 +448,13 @@ document.getElementById('btn-reveal-all')?.addEventListener('click', () => {
 });
 
 input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (terminalEl?.classList.contains('expandido')) {
+            terminalEl.classList.remove('expandido');
+            e.preventDefault();
+            return;
+        }
+    }
     if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (commandHistory.length > 0) {
@@ -344,7 +489,35 @@ input.addEventListener('keydown', (e) => {
             if (commandHistory.length > 50) commandHistory.pop();
             historyIndex = -1;
         }
-        
+
+        const meta = words[0];
+        const consulta = words.slice(1).join(' ');
+
+        if (meta === 'comandos' || meta === 'help' || meta === '?') {
+            void mostrarAyuda(consulta);
+            input.value = '';
+            return;
+        }
+        if (meta === 'buscar') {
+            if (consulta) void mostrarResultados(consulta);
+            else terminal?.agregar('Uso: buscar <texto>. Ejemplo: buscar fuego.', 'soma');
+            input.value = '';
+            return;
+        }
+        if (meta === 'capturar') {
+            capturarEscena();
+            input.value = '';
+            return;
+        }
+        if (meta === 'panel') {
+            abrirMenu(true);
+            input.value = '';
+            return;
+        }
+
+        // Un comando real vuelve a compactar la terminal.
+        terminalEl?.classList.remove('expandido');
+
         let valid = false;
 
         const comboRes = checkCombos(words, log);
@@ -367,7 +540,22 @@ input.addEventListener('keydown', (e) => {
                 }
             });
         }
-        if (!valid && val !== '') log.innerText = "Estado no encontrado o comando no válido.";
+        if (!valid && val !== '') {
+            const textoFallido = rawVal;
+            void cargarBusqueda()
+                .then(({ sugerirComandos }) => {
+                    const sugerencias = sugerirComandos(textoFallido);
+                    if (sugerencias.length > 0) {
+                        const lista = sugerencias.map((id) => `"${id}"`).join(', ');
+                        log.innerText = `SOMA: no reconozco "${textoFallido}". ¿Quisiste decir ${lista}?`;
+                    } else {
+                        log.innerText = `SOMA: no reconozco "${textoFallido}". Escribí "comandos" o "buscar <texto>".`;
+                    }
+                })
+                .catch(() => {
+                    log.innerText = `SOMA: no reconozco "${textoFallido}". Escribí "comandos" para ver la lista.`;
+                });
+        }
         input.value = '';
     }
 });

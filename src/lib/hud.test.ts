@@ -102,6 +102,37 @@ describe('hud', () => {
     expect(document.getElementById('hud-combos')?.textContent).toBe('2');
   });
 
+  it('agrega comandos y búsquedas clickeables sin duplicar anuncios', async () => {
+    document.body.innerHTML = `
+      <div id="terminal-lines"></div>
+      <div id="log">Motor en espera...</div>
+      <div id="historial"></div>
+    `;
+
+    const log = document.getElementById('log') as HTMLElement;
+    const historial = document.getElementById('historial') as HTMLElement;
+    const terminal = iniciarTerminal(log, historial);
+    const inicial = historial.children.length;
+
+    terminal.agregarComando('feliz', 'Alegría con rebote.');
+    terminal.agregarBusqueda('Cuidado (7)', 'cuidado', 'Comer y dormir.');
+
+    const botonComando = historial.querySelector('[data-comando="feliz"]');
+    const botonBusqueda = historial.querySelector('[data-buscar="cuidado"]');
+    expect(botonComando).not.toBeNull();
+    expect(botonBusqueda).not.toBeNull();
+    expect(historial.children.length).toBe(inicial + 2);
+
+    terminal.anunciar('SOMA: ayuda mostrada.');
+    await new Promise((resolver) => setTimeout(resolver, 0));
+
+    // El anuncio va al live region pero no se duplica en el historial.
+    expect(historial.children.length).toBe(inicial + 2);
+    expect(log.textContent).toBe('SOMA: ayuda mostrada.');
+
+    terminal.detener();
+  });
+
   it('agrega líneas al historial y las limita', async () => {
     document.body.innerHTML = `
       <div id="terminal-lines"></div>
