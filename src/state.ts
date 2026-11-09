@@ -62,13 +62,28 @@ export const physics: Physics = { vx: 0, vy: 0, isDragging: false };
 export const activeTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
 // Bucle de vida (Decay)
+let ticksSinGuardar = 0;
+
+const guardarStats = (): void => {
+    escribirJSON('soma_stats', state.stats);
+};
+
 setInterval(() => {
+    // Con la pestaña oculta no se simula: antes el personaje se desnutría
+    // mientras el usuario estaba en otra pestaña.
+    if (typeof document !== 'undefined' && document.hidden) return;
+
     // Decaimiento
     state.stats.hunger = Math.max(0, state.stats.hunger - 0.05); // Baja lento
     state.stats.energy = Math.max(0, state.stats.energy - 0.03);
     state.stats.happiness = Math.max(0, state.stats.happiness - 0.04);
-    
-    escribirJSON('soma_stats', state.stats);
+
+    // Persistir cada 10 s en vez de cada segundo (I/O síncrono).
+    ticksSinGuardar++;
+    if (ticksSinGuardar >= 10) {
+        ticksSinGuardar = 0;
+        guardarStats();
+    }
 
     // Estados automáticos si no hay comando activo (Prioridad inversa)
     if (Object.keys(activeTimers).length === 0) {
@@ -94,6 +109,14 @@ setInterval(() => {
         }
     }
 }, 1000);
+
+// Al salir o al ocultar la pestaña se guarda el estado sin esperar el tick.
+if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', guardarStats);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) guardarStats();
+    });
+}
 
 export const updateStat = (stat: keyof Stats, amount: number) => {
     state.stats[stat] = Math.min(100, Math.max(0, state.stats[stat] + amount));

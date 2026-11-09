@@ -72,6 +72,31 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 - **Tests**: Vitest con entorno jsdom para normalización de texto y el
   almacenamiento seguro.
 
+### Segundo pase
+
+- **9 comandos con acento eran inalcanzables** (`vórtice`, `relámpago`,
+  `parís`, `espía`, `samurái`, `cuántico`, `montaña`, `pequeño`, `sueño`):
+  la entrada se normaliza sin acentos, así que la clave nunca coincidía.
+  Ahora las 465 claves están normalizadas y hay un test que lo verifica.
+- **~50 MB de RAM menos**: el spritesheet ya no se corta en 24 canvas por
+  pose. Se guarda la imagen original y cada frame se dibuja con su
+  rectángulo de origen.
+- **Textura WebGL**: se reserva una vez y se actualiza con `texSubImage2D`
+  en lugar de reasignar 3,84 MB por frame con `texImage2D`.
+- **Estadísticas**: se guardan cada 10 s (antes cada segundo) y el
+  tamagotchi se pausa con la pestaña oculta, con guardado en `pagehide`.
+- **Táctil**: el arrastre, el parallax y la física usan Pointer Events, así
+  que funcionan con mouse, touch y lápiz. `touch-action: none` evita que
+  la página scrollee al arrastrar.
+- **Diálogos**: foco inicial, Tab/Shift+Tab atrapado, cierre con Escape y
+  retorno del foco. El input recupera un `:focus-visible` visible.
+- **Tests: 22** (antes 8). Incluyen integridad del diccionario (las 465
+  claves y la ejecución de cada comando), sinergias, timers de `executeCmd`,
+  foco de diálogos, texto y storage.
+- **Infra**: headers CSP, `nosniff`, `Referrer-Policy` y
+  `Permissions-Policy`; cache para `/Hikaru/*` y `/assets/*`; Node 26 fijado
+  en `engines`.
+
 ## Estructura del proyecto
 
 ```
@@ -82,8 +107,8 @@ El output se genera en `dist/` y está listo para deploy en Vercel.
 │   ├── state.ts          # Estado global y persistencia
 │   ├── audio.ts          # Sonidos procedurales
 │   ├── types.ts          # Tipos TypeScript
-│   ├── lib/              # Helpers puros + tests
-│   └── test/setup.ts     # Setup de Vitest
+│   ├── lib/              # Helpers puros (storage, texto, diálogos) + tests
+│   └── test/setup.ts     # Setup de Vitest (localStorage y matchMedia)
 ├── public/
 │   ├── favicon.svg
 │   └── Hikaru/           # Sprites del personaje (WebP)

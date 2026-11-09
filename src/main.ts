@@ -3,6 +3,7 @@ import { startRenderLoop, loadImages } from './render';
 import { getCmds, checkCombos } from './diccionario';
 import { state, physics, target, discoveredWords, discoveredCombos, saveDiscovery } from './state';
 import { palabrasDe } from './lib/texto';
+import { atraparFoco, enfocarPrimero } from './lib/dialogo';
 import type { MouseData } from './types';
 
 const srcCanvas = document.getElementById('srcCanvas') as HTMLCanvasElement;
@@ -80,17 +81,26 @@ const getMouseData = (): MouseData => {
     return datos;
 };
 
-gameCanvas.addEventListener('mousedown', (e) => {
+// Pointer Events cubre mouse, touch y lápiz con el mismo código. Con mouse
+// tapaba solo el parallax; en celular el arrastre y la física no funcionaban.
+gameCanvas.addEventListener('pointerdown', (e) => {
     if (!state.physicsEnabled) return;
     const rect = gameCanvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) * (srcCanvas.width / rect.width);
     const my = (e.clientY - rect.top) * (srcCanvas.height / rect.height);
     const cx = srcCanvas.width / 2 + state.offsetX;
     const cy = srcCanvas.height / 2 + state.offsetY;
-    if (Math.abs(mx - cx) < 200 && Math.abs(my - cy) < 250) physics.isDragging = true;
+    if (Math.abs(mx - cx) < 200 && Math.abs(my - cy) < 250) {
+        physics.isDragging = true;
+        try {
+            gameCanvas.setPointerCapture(e.pointerId);
+        } catch {
+            /* algunos navegadores viejos no soportan captura */
+        }
+    }
 });
 
-gameCanvas.addEventListener('mousemove', (e) => {
+gameCanvas.addEventListener('pointermove', (e) => {
     const rect = gameCanvas.getBoundingClientRect();
     lastMouseX = mouseX;
     lastMouseY = mouseY;
@@ -104,14 +114,35 @@ gameCanvas.addEventListener('mousemove', (e) => {
     }
 });
 
-gameCanvas.addEventListener('mouseup', () => physics.isDragging = false);
-gameCanvas.addEventListener('mouseleave', () => physics.isDragging = false);
+const soltarPuntero = (e: PointerEvent): void => {
+    physics.isDragging = false;
+    if (gameCanvas.hasPointerCapture?.(e.pointerId)) {
+        gameCanvas.releasePointerCapture(e.pointerId);
+    }
+};
+
+gameCanvas.addEventListener('pointerup', soltarPuntero);
+gameCanvas.addEventListener('pointercancel', soltarPuntero);
+gameCanvas.addEventListener('pointerleave', () => {
+    if (!physics.isDragging) physics.isDragging = false;
+});
 gameCanvas.addEventListener('click', () => {
     if (target.interactive) clickPendiente = true;
 });
 
-document.getElementById('btn-accept-warning')?.addEventListener('click', async () => {
-    const warningModal = document.getElementById('warning-modal');
+// --- Diálogo de aviso ---
+const warningModal = document.getElementById('warning-modal');
+const botonAceptar = document.getElementById('btn-accept-warning');
+let soltarTrampaAviso: (() => void) | null = null;
+
+if (warningModal) {
+    soltarTrampaAviso = atraparFoco(warningModal);
+    enfocarPrimero(warningModal);
+}
+
+botonAceptar?.addEventListener('click', async () => {
+    soltarTrampaAviso?.();
+    soltarTrampaAviso = null;
     if (warningModal) warningModal.classList.add('hidden');
     
     log.innerText = "SOMA: Cargando recursos gráficos...";
@@ -139,10 +170,26 @@ const totalWords = Object.keys(cmds).length;
 const menuBtn = document.getElementById('menu-btn');
 const menuModal = document.getElementById('menu-modal');
 
+let soltarTrampaMenu: (() => void) | null = null;
+
 const abrirMenu = (abierto: boolean): void => {
     menuModal?.classList.toggle('hidden', !abierto);
     menuBtn?.setAttribute('aria-expanded', String(abierto));
+
+    if (abierto && menuModal) {
+        soltarTrampaMenu?.();
+        soltarTrampaMenu = atraparFoco(menuModal, cerrarMenu);
+        enfocarPrimero(menuModal);
+    } else {
+        soltarTrampaMenu?.();
+        soltarTrampaMenu = null;
+    }
 };
+
+function cerrarMenu(): void {
+    abrirMenu(false);
+    input.focus();
+}
 
 menuBtn?.addEventListener('click', () => {
     const discoveryCount = document.getElementById('discovery-count');
@@ -154,10 +201,7 @@ menuBtn?.addEventListener('click', () => {
     abrirMenu(true);
 });
 
-document.getElementById('btn-close-menu')?.addEventListener('click', () => {
-    abrirMenu(false);
-    input.focus();
-});
+document.getElementById('btn-close-menu')?.addEventListener('click', cerrarMenu);
 
 document.getElementById('btn-show-words')?.addEventListener('click', () => {
     const btnShowWords = document.getElementById('btn-show-words');

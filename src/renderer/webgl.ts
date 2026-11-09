@@ -170,6 +170,13 @@ export function initWebGL(canvas: HTMLCanvasElement): WebGLContext | null {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    // Se reserva la textura una sola vez; cada frame solo se actualiza con
+    // texSubImage2D en vez de reasignarla entera.
+    gl.texImage2D(
+        gl.TEXTURE_2D, 0, gl.RGBA,
+        canvas.width, canvas.height, 0,
+        gl.RGBA, gl.UNSIGNED_BYTE, null
+    );
 
     return {
         gl,

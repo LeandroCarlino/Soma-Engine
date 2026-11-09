@@ -38,3 +38,22 @@ if (typeof globalThis.localStorage === 'undefined') {
     writable: true,
   });
 }
+
+// jsdom no implementa matchMedia y state.ts lo consulta al cargarse.
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string): MediaQueryList =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  });
+}

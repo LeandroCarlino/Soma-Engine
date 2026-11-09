@@ -102,9 +102,19 @@ const microMovementConfig = {
     } as Record<string, boolean>
 };
 
+interface FrameRect {
+    source: HTMLImageElement;
+    sx: number;
+    sy: number;
+    sw: number;
+    sh: number;
+}
+
 interface SpriteData {
     isSpriteSheet: boolean;
-    frames: HTMLCanvasElement[];
+    source: HTMLImageElement | null;
+    frameWidth: number;
+    frameHeight: number;
     frameCount: number;
     currentFrame: number;
     frameTimer: number;
@@ -116,9 +126,14 @@ interface SpriteData {
 const spriteCache: Record<string, SpriteData> = {};
 
 const detectAndSliceSpriteSheet = (img: HTMLImageElement, poseName: string, forcedFrameCount?: number): SpriteData => {
+    const ancho = img.naturalWidth || img.width || 1;
+    const alto = img.naturalHeight || img.height || 1;
+
     const data: SpriteData = {
         isSpriteSheet: false,
-        frames: [],
+        source: img,
+        frameWidth: ancho,
+        frameHeight: alto,
         frameCount: 1,
         currentFrame: 0,
         frameTimer: 0,
@@ -131,7 +146,7 @@ const detectAndSliceSpriteSheet = (img: HTMLImageElement, poseName: string, forc
 
     // Auto-detect if no forced count
     if (!frameCount) {
-        const ratio = img.width / img.height;
+        const ratio = ancho / alto;
         if (ratio >= 1.8 && ratio <= 16) {
             frameCount = Math.round(ratio);
         }
@@ -140,19 +155,8 @@ const detectAndSliceSpriteSheet = (img: HTMLImageElement, poseName: string, forc
     if (frameCount >= 2 && frameCount <= 128) {
         data.isSpriteSheet = true;
         data.frameCount = frameCount;
-
-        const frameWidth = Math.floor(img.width / frameCount);
-        for (let i = 0; i < frameCount; i++) {
-            const canvas = document.createElement('canvas');
-            canvas.width = frameWidth;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(img, i * frameWidth, 0, frameWidth, img.height, 0, 0, frameWidth, img.height);
-            }
-            data.frames.push(canvas);
-        }
-
+        data.frameWidth = Math.floor(ancho / frameCount);
+        data.frameHeight = alto;
         data.frameSpeed = spriteSpeedConfig[poseName] || 150;
         data.pingPong = spritePingPongConfig[poseName] || false;
     }
@@ -160,15 +164,23 @@ const detectAndSliceSpriteSheet = (img: HTMLImageElement, poseName: string, forc
     return data;
 };
 
-const getCurrentFrame = (poseName: string, deltaTime: number): HTMLCanvasElement | HTMLImageElement => {
+const rectDeImagen = (img: HTMLImageElement): FrameRect => ({
+    source: img,
+    sx: 0,
+    sy: 0,
+    sw: img.naturalWidth || img.width || 1,
+    sh: img.naturalHeight || img.height || 1
+});
+
+const getCurrentFrame = (poseName: string, deltaTime: number): FrameRect => {
     const img = images[poseName];
     if (!img || !img.complete || img.naturalWidth === 0) {
-        return images['subject'] || img;
+        return rectDeImagen(images['subject'] || img);
     }
     
     const sprite = spriteCache[poseName];
     if (!sprite || !sprite.isSpriteSheet) {
-        return img;
+        return rectDeImagen(img);
     }
     
     // Advance animation
@@ -188,34 +200,42 @@ const getCurrentFrame = (poseName: string, deltaTime: number): HTMLCanvasElement
         }
     }
     
-    return sprite.frames[sprite.currentFrame];
+    // Se devuelve la región del sheet en vez de un canvas recortado: así no
+    // hay 24 canvas de 540x960 (~50 MB) viviendo en memoria.
+    return {
+        source: img,
+        sx: sprite.currentFrame * sprite.frameWidth,
+        sy: 0,
+        sw: sprite.frameWidth,
+        sh: sprite.frameHeight
+    };
 };
 
 // --- Optimization: Tint Cache ---
 let cachedTintCanvas: HTMLCanvasElement | null = null;
 let lastTint: string = 'none';
-let lastTintImage: HTMLImageElement | HTMLCanvasElement | null = null;
+let lastTintFrame: FrameRect | null = null;
 
-const getTintedImage = (img: HTMLImageElement | HTMLCanvasElement, tint: string): HTMLCanvasElement | HTMLImageElement => {
-    if (tint === 'none' || !tint) return img;
+const mismoFrame = (a: FrameRect | null, b: FrameRect): boolean =>
+    !!a && a.source === b.source && a.sx === b.sx && a.sy === b.sy && a.sw === b.sw && a.sh === b.sh;
 
-    // Return cached version if valid
-    if (cachedTintCanvas && lastTint === tint && lastTintImage === img) {
+const getTintedImage = (frame: FrameRect, tint: string): HTMLCanvasElement => {
+    if (cachedTintCanvas && lastTint === tint && mismoFrame(lastTintFrame, frame)) {
         return cachedTintCanvas;
     }
 
-    // Create new cache
     if (!cachedTintCanvas) {
         cachedTintCanvas = document.createElement('canvas');
     }
 
-    cachedTintCanvas.width = img.width;
-    cachedTintCanvas.height = img.height;
+    cachedTintCanvas.width = frame.sw;
+    cachedTintCanvas.height = frame.sh;
     const ctx = cachedTintCanvas.getContext('2d');
-    if (!ctx) return img; // Fallback
+    if (!ctx) return cachedTintCanvas;
 
-    ctx.drawImage(img, 0, 0);
-    const imgData = ctx.getImageData(0, 0, cachedTintCanvas.width, cachedTintCanvas.height);
+    ctx.clearRect(0, 0, frame.sw, frame.sh);
+    ctx.drawImage(frame.source, frame.sx, frame.sy, frame.sw, frame.sh, 0, 0, frame.sw, frame.sh);
+    const imgData = ctx.getImageData(0, 0, frame.sw, frame.sh);
     const data = imgData.data;
     const r = parseInt(tint.slice(1, 3), 16) || 255;
     const g = parseInt(tint.slice(3, 5), 16) || 0;
@@ -232,7 +252,7 @@ const getTintedImage = (img: HTMLImageElement | HTMLCanvasElement, tint: string)
 
     // Update cache state
     lastTint = tint;
-    lastTintImage = img;
+    lastTintFrame = { ...frame };
 
     return cachedTintCanvas;
 };
@@ -598,8 +618,8 @@ export const startRenderLoop = (
 
         drawEscenario(srcCtx, srcCanvas.width, srcCanvas.height, state.escenario || 'ninguno', frame);
 
-        const currentImg = getCurrentFrame(state.pose, deltaTime);
-        const aspect = currentImg.width / currentImg.height;
+        const currentFrame = getCurrentFrame(state.pose, deltaTime);
+        const aspect = currentFrame.sw / currentFrame.sh;
         let h = 450;
         let w = h * aspect;
 
@@ -658,10 +678,14 @@ export const startRenderLoop = (
             
             // Draw Subject with potential Tint
             if (state.tint && state.tint !== 'none') {
-                const tintedSource = getTintedImage(currentImg, state.tint);
+                const tintedSource = getTintedImage(currentFrame, state.tint);
                 srcCtx.drawImage(tintedSource, drawX, drawY, w, h);
             } else {
-                srcCtx.drawImage(currentImg, drawX, drawY, w, h);
+                srcCtx.drawImage(
+                    currentFrame.source,
+                    currentFrame.sx, currentFrame.sy, currentFrame.sw, currentFrame.sh,
+                    drawX, drawY, w, h
+                );
             }
             
             drawEmote(srcCtx, drawX, drawY, w, h, frame);
@@ -754,7 +778,7 @@ export const startRenderLoop = (
         if (webglSupported && glContext) {
             const { gl, tex, locations } = glContext;
             gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas);
+            gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, srcCanvas);
 
             const setUniform = (loc: WebGLUniformLocation | null, val: number) => {
                 if (loc !== null) gl.uniform1f(loc, val);
@@ -805,7 +829,7 @@ export const loadImages = (): Promise<void> => {
                 fallback.width = 200;
                 fallback.height = 400;
                 images[pose] = fallback;
-                spriteCache[pose] = { isSpriteSheet: false, frames: [], frameCount: 1, currentFrame: 0, frameTimer: 0, frameSpeed: 150, pingPong: false, direction: 1 };
+                spriteCache[pose] = { isSpriteSheet: false, source: fallback, frameWidth: 200, frameHeight: 400, frameCount: 1, currentFrame: 0, frameTimer: 0, frameSpeed: 150, pingPong: false, direction: 1 };
                 loaded++;
                 resourcesLoaded.images = loaded;
                 if (loaded === total) {
